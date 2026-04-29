@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --input-type=module)",
+      "Bash(node --check c:/Users/charl/PROYECTOS/webHunter/js/app.js)",
+      "Bash(node --check c:/Users/charl/PROYECTOS/webHunter/js/data.js)"
+    ]
+  }
+}
