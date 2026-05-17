@@ -3,7 +3,13 @@
     "allow": [
       "Bash(node --input-type=module)",
       "Bash(node --check c:/Users/charl/PROYECTOS/webHunter/js/app.js)",
-      "Bash(node --check c:/Users/charl/PROYECTOS/webHunter/js/data.js)"
+      "Bash(node --check c:/Users/charl/PROYECTOS/webHunter/js/data.js)",
+      "Bash(gh api *)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "PowerShell(npx skills add coreyhaines31/marketingskills 2>&1)",
+      "Bash(npx skills *)",
+      "Bash(not exist *)"
     ]
   }
 }

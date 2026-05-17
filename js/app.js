@@ -194,6 +194,7 @@ function kanbanCard(p) {
     <div class="kc-actions">
       <button class="kc-btn primary" onclick="openEmailModal('${p.id}')">Email</button>
       <button class="kc-btn" onclick="openNotesModal('${p.id}')">Notas</button>
+      <button class="kc-btn" onclick="openCopilotModal('${p.id}')" title="Qué hacer con este prospecto">¿Qué hago?</button>
       <button class="kc-btn" onclick="editProspect('${p.id}')">✏</button>
       <button class="kc-btn" style="margin-left:auto;color:#DC2626" onclick="deleteProspect('${p.id}')">✕</button>
     </div>
@@ -278,6 +279,7 @@ function renderFollowups() {
           <div class="fi-actions">
             <button class="kc-btn primary" onclick="openEmailModal('${p.id}')">Email</button>
             <button class="kc-btn" onclick="openNotesModal('${p.id}')">+ Nota</button>
+            <button class="kc-btn" onclick="openCopilotModal('${p.id}')">¿Qué hago?</button>
             <button class="kc-btn" onclick="snoozeFollowup('${p.id}')">+7 días</button>
           </div>
         </div>`).join('')}
@@ -372,6 +374,7 @@ function deleteProspect(id) {
 async function enrichWithAI() {
   const name = getVal('p-name').trim();
   if (!name) { showToast('Introduce el nombre primero'); return; }
+  if (!settings.anthropicKey) { showToast('Añade tu API key de Anthropic en Ajustes'); return; }
   const btn = document.getElementById('btn-enrich');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner-dark"></span> Analizando…';
@@ -386,7 +389,7 @@ Responde SOLO JSON, sin texto extra:
 
     const res  = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': settings.anthropicKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:800, messages:[{ role:'user', content:prompt }] })
     });
     const data = await res.json();
@@ -461,7 +464,7 @@ async function sendEmail() {
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': settings.anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'mcp-client-2025-04-04' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
@@ -542,6 +545,62 @@ function sendWhatsApp() {
 
 function closeEmailModal() { document.getElementById('modal-email').classList.add('hidden'); emailTargetId = null; }
 
+// ── Agente Redactor — genera email personalizado con IA ────────
+async function generateEmailWithAI() {
+  const p = prospects.find(x => x.id === emailTargetId);
+  if (!p) return;
+  if (!settings.anthropicKey) { showToast('Añade tu API key de Anthropic en Ajustes'); return; }
+
+  const btn = document.getElementById('btn-ai-generate');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-dark"></span> Generando…';
+
+  const currentBody  = document.getElementById('e-body').value.trim();
+  const tplContext   = currentBody ? `\n\nReferencia de tono y estructura:\n${currentBody}` : '';
+  const notesContext = p.notes?.length
+    ? `\n\nHistorial de contacto previo:\n${p.notes.slice(-3).map(n => n.text).join('\n')}`
+    : '';
+
+  const prompt = `Eres un experto en ventas de servicios web a pequeños negocios locales en España.
+Escribe un email de primer contacto para vender una página web profesional a este negocio.
+
+Datos del negocio:
+- Nombre: ${p.name}
+- Tipo: ${p.type || 'negocio local'}
+- Ciudad: ${p.city || 'España'}
+- Valoración Google: ${p.rating ? p.rating.toFixed(1) + '/5 (' + (p.reviews||0) + ' reseñas)' : 'sin datos'}
+- No tiene página web${tplContext}${notesContext}
+
+Reglas:
+- Sona personal y humano, NO spam masivo
+- Menciona algo concreto del negocio (su tipo, ciudad, reseñas si las hay)
+- Cuerpo máximo 130 palabras
+- CTA claro al final (responder al email o llamar)
+- Firma de: ${settings.agency || 'nuestra agencia'}${settings.phone ? ' · ' + settings.phone : ''}
+
+Responde SOLO con JSON (sin markdown):
+{"subject": "...", "body": "..."}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': settings.anthropicKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 600, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data   = await res.json();
+    const text   = data.content?.find(c => c.type === 'text')?.text || '';
+    const result = JSON.parse(text.replace(/```json|```/g, '').trim());
+    if (result.subject) document.getElementById('e-subject').value = result.subject;
+    if (result.body)    document.getElementById('e-body').value    = result.body;
+    showToast('Email generado con IA ✓');
+  } catch (e) {
+    showToast('Error al generar con IA — revisa tu API key');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Generar con IA';
+}
+
 // ══════════════════════════════════════════════════════════════
 //  NOTES MODAL + Google Calendar sync
 // ══════════════════════════════════════════════════════════════
@@ -595,7 +654,7 @@ async function syncFollowupToCalendar(p, dateStr) {
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-api-key': settings.anthropicKey, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'mcp-client-2025-04-04' },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 800,
@@ -696,20 +755,22 @@ function applySettingsToForm() {
   setVal('cfg-web',       settings.web       || '');
   setVal('cfg-price',     settings.price     || 299);
   setVal('cfg-maps-key',  settings.mapsKey   || '');
+  setVal('cfg-anthropic-key', settings.anthropicKey || '');
   setVal('cfg-gmail-client', settings.gmailClient || '');
   setVal('cfg-email-mode',   settings.emailMode   || 'gmail-mcp');
 }
 
 function saveSettings() {
   settings = {
-    agency:      getVal('cfg-agency'),
-    email:       getVal('cfg-email'),
-    phone:       getVal('cfg-phone'),
-    web:         getVal('cfg-web'),
-    price:       parseInt(getVal('cfg-price')) || 299,
-    mapsKey:     getVal('cfg-maps-key'),
-    gmailClient: getVal('cfg-gmail-client'),
-    emailMode:   getVal('cfg-email-mode'),
+    agency:        getVal('cfg-agency'),
+    email:         getVal('cfg-email'),
+    phone:         getVal('cfg-phone'),
+    web:           getVal('cfg-web'),
+    price:         parseInt(getVal('cfg-price')) || 299,
+    mapsKey:       getVal('cfg-maps-key'),
+    anthropicKey:  getVal('cfg-anthropic-key'),
+    gmailClient:   getVal('cfg-gmail-client'),
+    emailMode:     getVal('cfg-email-mode'),
   };
   save();
   showToast('Ajustes guardados ✓');
@@ -859,7 +920,9 @@ function renderSearchResults() {
 
   const addedIds = new Set(prospects.filter(p => p.placeId).map(p => p.placeId));
 
-  el.innerHTML = `<div class="search-results-grid">${searchResults.map((place, idx) => {
+  const sorted = [...searchResults].sort((a, b) => scorePlace(b) - scorePlace(a));
+
+  el.innerHTML = `<div class="search-results-grid">${sorted.map((place, idx) => {
     const isAdded  = addedIds.has(place.id);
     const name     = place.displayName?.text || '—';
     const type     = place.primaryTypeDisplayName?.text || '';
@@ -869,11 +932,17 @@ function renderSearchResults() {
     const reviews  = place.userRatingCount || 0;
     const mapsUrl  = place.googleMapsUri || '';
     const stars    = rating ? '★'.repeat(Math.round(rating)) + '☆'.repeat(5 - Math.round(rating)) : '';
+    const score    = scorePlace(place);
+    const scoreClr = score >= 8 ? '#059669' : score >= 5 ? '#D97706' : '#94A3B8';
+    const realIdx  = searchResults.indexOf(place);
 
     return `<div class="search-card${isAdded ? ' search-card-added' : ''}">
       <div class="sc-header">
         <div class="sc-name">${name}</div>
-        <span class="${isAdded ? 'sc-added-badge' : 'sc-noweb-badge'}">${isAdded ? 'Añadido ✓' : 'Sin web'}</span>
+        <div style="display:flex;gap:5px;align-items:center">
+          <span style="font-size:11px;font-weight:700;color:${scoreClr};background:${scoreClr}18;padding:2px 7px;border-radius:20px">${score}/10</span>
+          <span class="${isAdded ? 'sc-added-badge' : 'sc-noweb-badge'}">${isAdded ? 'Añadido ✓' : 'Sin web'}</span>
+        </div>
       </div>
       ${type    ? `<div class="sc-type">${type}</div>` : ''}
       ${address ? `<div class="sc-meta">📍 ${address}</div>` : ''}
@@ -882,12 +951,13 @@ function renderSearchResults() {
       <div class="sc-actions">
         ${isAdded
           ? `<button class="btn-outline" disabled style="opacity:.5;flex:1">Ya añadido</button>`
-          : `<button class="btn-primary" style="flex:1" onclick="addFromSearch(${idx})">+ Añadir prospecto</button>`
+          : `<button class="btn-primary" style="flex:1" onclick="addFromSearch(${realIdx})">+ Añadir prospecto</button>`
         }
         ${mapsUrl ? `<a class="btn-outline" href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="flex-shrink:0">Maps ↗</a>` : ''}
       </div>
     </div>`;
   }).join('')}</div>`;
+
 }
 
 function addFromSearch(idx) {
@@ -941,10 +1011,128 @@ function showToast(msg) {
   t._t = setTimeout(() => t.classList.add('hidden'), 3000);
 }
 
+// ── CALIFICADOR DE PROSPECTOS ─────────────────────────────────
+function scorePlace(place) {
+  let s = 4;
+  const rating  = place.rating || 0;
+  const reviews = place.userRatingCount || 0;
+  if (rating >= 4.5)             s += 2;
+  else if (rating >= 4.0)        s += 1;
+  else if (rating > 0 && rating < 3.5) s -= 1;
+  if (reviews >= 100)            s += 2;
+  else if (reviews >= 30)        s += 1;
+  if (place.internationalPhoneNumber)  s += 1;
+  return Math.max(1, Math.min(10, s));
+}
+
+// ── COPILOTO DE SEGUIMIENTO ───────────────────────────────────
+async function openCopilotModal(prospectId) {
+  const p = prospects.find(x => x.id === prospectId);
+  if (!p) return;
+  if (!settings.anthropicKey) { showToast('Añade tu API key de Anthropic en Ajustes'); return; }
+
+  document.getElementById('copilot-modal-name').textContent = p.name;
+  document.getElementById('copilot-advice').innerHTML =
+    '<div style="text-align:center;padding:20px"><span class="spinner-dark"></span><p style="margin-top:8px;color:var(--text2);font-size:13px">Analizando situación…</p></div>';
+  document.getElementById('modal-copilot').classList.remove('hidden');
+
+  const today = todayStr();
+  const daysSince = p.lastActivity
+    ? Math.floor((Date.now() - new Date(p.lastActivity + 'T00:00:00')) / 86400000)
+    : null;
+  const notesCtx = p.notes?.length
+    ? p.notes.slice(-3).map(n => `- ${n.text}`).join('\n')
+    : 'Sin notas previas.';
+
+  const prompt = `Eres un consultor de ventas experto en vender webs a negocios locales en España.
+
+Prospecto: ${p.name} (${p.type || 'negocio local'}, ${p.city || 'España'})
+Etapa: ${stageLabel(p.stage)}
+Google: ${p.rating ? p.rating.toFixed(1) + '/5 · ' + (p.reviews || 0) + ' reseñas' : 'sin valoración'}
+${p.phone ? 'Tel: ' + p.phone : 'Sin teléfono'}
+${p.email ? 'Email: ' + p.email : 'Sin email'}
+${daysSince !== null ? 'Días sin actividad: ' + daysSince : ''}
+${p.followupDate && p.followupDate < today ? '⚠ Seguimiento vencido desde ' + p.followupDate : p.followupDate === today ? '📅 Seguimiento programado para HOY' : p.followupDate ? 'Próximo seguimiento: ' + p.followupDate : 'Sin seguimiento programado'}
+Notas:
+${notesCtx}
+
+Dame UNA recomendación concreta de qué hacer HOY. Sé específico: qué canal usar, qué decir, por qué ahora. Máximo 4 frases.`;
+
+  try {
+    const res  = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': settings.anthropicKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 300, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    const text = data.content?.find(c => c.type === 'text')?.text || 'No se pudo generar recomendación.';
+    document.getElementById('copilot-advice').innerHTML =
+      `<p style="line-height:1.75;color:var(--text1);font-size:14px;margin:0">${text.replace(/\n/g, '<br>')}</p>`;
+  } catch {
+    document.getElementById('copilot-advice').innerHTML =
+      '<p style="color:var(--red);font-size:13px">Error al conectar con la IA.</p>';
+  }
+}
+
+function closeCopilotModal() { document.getElementById('modal-copilot').classList.add('hidden'); }
+
+// ── PRIORIZADOR DIARIO ────────────────────────────────────────
+async function generateDailyPlan() {
+  if (!settings.anthropicKey) { showToast('Añade tu API key de Anthropic en Ajustes'); return; }
+
+  const btn = document.getElementById('btn-daily-plan');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-dark"></span>';
+
+  const today  = todayStr();
+  const active = prospects.filter(p => p.stage !== 'closed' && p.stage !== 'lost');
+
+  if (!active.length) {
+    document.getElementById('daily-plan-content').innerHTML =
+      '<p style="color:var(--text3);font-size:12px;margin:0">No hay prospectos activos todavía.</p>';
+    btn.disabled = false;
+    btn.innerHTML = '↻ Actualizar';
+    return;
+  }
+
+  const overdueCount = active.filter(p => p.followupDate && p.followupDate <= today).length;
+  const summary = active.slice(0, 12).map(p => {
+    const flag = p.followupDate < today ? '[VENCIDO]' : p.followupDate === today ? '[HOY]' : '';
+    const lastNote = p.notes?.length ? ' — ' + p.notes[p.notes.length - 1].text.substring(0, 50) : '';
+    return `- ${p.name} · ${stageLabel(p.stage)}${flag ? ' ' + flag : ''}${lastNote}`;
+  }).join('\n');
+
+  const prompt = `Eres un coach de ventas. Tengo ${active.length} prospectos activos, ${overdueCount} con seguimiento vencido o para hoy.
+
+${summary}
+
+Dame exactamente 5 acciones para HOY, ordenadas por prioridad. Formato: una por línea, empieza con emoji de acción, luego nombre del prospecto si aplica, luego qué hacer. Sin explicaciones largas, directo al grano.`;
+
+  try {
+    const res  = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': settings.anthropicKey, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 350, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data  = await res.json();
+    const text  = data.content?.find(c => c.type === 'text')?.text || '';
+    const lines = text.split('\n').filter(l => l.trim());
+    document.getElementById('daily-plan-content').innerHTML = lines.map(l =>
+      `<div style="padding:7px 0;border-bottom:1px solid var(--border1);font-size:12px;line-height:1.5;color:var(--text1)">${l}</div>`
+    ).join('');
+  } catch {
+    document.getElementById('daily-plan-content').innerHTML =
+      '<p style="color:var(--red);font-size:12px;margin:0">Error al conectar con la IA.</p>';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '↻ Actualizar';
+}
+
 // ── MODAL CLOSE ───────────────────────────────────────────────
-['modal-prospect','modal-email','modal-notes','modal-template'].forEach(id => {
+['modal-prospect','modal-email','modal-notes','modal-template','modal-copilot'].forEach(id => {
   document.getElementById(id)?.addEventListener('click', e => { if (e.target.id === id) document.getElementById(id).classList.add('hidden'); });
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') ['modal-prospect','modal-email','modal-notes','modal-template'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
+  if (e.key === 'Escape') ['modal-prospect','modal-email','modal-notes','modal-template','modal-copilot'].forEach(id => document.getElementById(id)?.classList.add('hidden'));
 });
