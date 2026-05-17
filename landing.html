@@ -1185,17 +1185,9 @@
 </footer>
 
 <script>
-  // ─────────────────────────────────────────────
-  // CONFIGURACIÓN — reemplaza con tus valores
-  // ─────────────────────────────────────────────
-  // 1. Crea cuenta gratis en brevo.com
-  // 2. Crea una lista de contactos llamada "Waitlist WebHunter"
-  // 3. Ve a SMTP & API > API Keys y genera una clave
-  // 4. Sustituye los valores de abajo
-  const BREVO_API_KEY = 'TU_API_KEY_AQUI';
-  const BREVO_LIST_ID = 3; // ID de tu lista en Brevo (ver en Contacts > Lists)
-  const WAITLIST_SEED = 140; // número base visible en el contador
-  // ─────────────────────────────────────────────
+  const SUPABASE_URL = 'https://eandeidsiljaellamrhi.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhbmRlaWRzaWxqYWVsbGFtcmhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMjA2NTAsImV4cCI6MjA5NDU5NjY1MH0.bLqQx0xOLTWSJmXMsXlg2kYMfhYSbNkyLBD0g-Js0O0';
+  const WAITLIST_SEED = 140;
 
   let localCount = parseInt(localStorage.getItem('wh_count') || '0');
 
@@ -1210,7 +1202,7 @@
 
   async function handleSignup(inputId, formId, successId) {
     const input = document.getElementById(inputId);
-    const email = input.value.trim();
+    const email = input.value.trim().toLowerCase();
     const btn = input.nextElementSibling;
 
     if (!email || !email.includes('@') || !email.includes('.')) {
@@ -1220,62 +1212,46 @@
       return;
     }
 
-    // Deshabilitar botón mientras procesa
     btn.disabled = true;
+    const originalText = btn.textContent;
     btn.textContent = 'Guardando...';
 
     try {
-      // Intentar guardar en Brevo si hay API key configurada
-      if (BREVO_API_KEY !== 'TU_API_KEY_AQUI') {
-        await fetch('https://api.brevo.com/v3/contacts', {
-          method: 'POST',
-          headers: {
-            'accept': 'application/json',
-            'content-type': 'application/json',
-            'api-key': BREVO_API_KEY
-          },
-          body: JSON.stringify({
-            email: email,
-            listIds: [BREVO_LIST_ID],
-            updateEnabled: true,
-            attributes: {
-              SOURCE: 'webhunter-waitlist',
-              SIGNUP_DATE: new Date().toISOString().split('T')[0]
-            }
-          })
-        });
-      }
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/waitlist`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ email })
+      });
 
-      // Guardar localmente también (backup)
-      const emails = JSON.parse(localStorage.getItem('wh_emails') || '[]');
-      if (!emails.includes(email)) {
-        emails.push(email);
-        localStorage.setItem('wh_emails', JSON.stringify(emails));
-        localCount++;
-        localStorage.setItem('wh_count', localCount.toString());
+      // 201 = creado, 409 = email duplicado (unique constraint) — ambos son OK
+      if (res.ok || res.status === 409) {
+        if (res.status !== 409) {
+          localCount++;
+          localStorage.setItem('wh_count', localCount.toString());
+          updateCounter();
+        }
+        document.getElementById(formId).style.display = 'none';
+        document.getElementById(successId).style.display = 'flex';
+      } else {
+        throw new Error('Error ' + res.status);
       }
-
-      // Mostrar éxito
-      const form = document.getElementById(formId);
-      const success = document.getElementById(successId);
-      form.style.display = 'none';
-      success.style.display = 'flex';
-      updateCounter();
 
     } catch (err) {
-      // Si falla Brevo, guardamos local igualmente y mostramos éxito
-      const emails = JSON.parse(localStorage.getItem('wh_emails') || '[]');
-      if (!emails.includes(email)) {
-        emails.push(email);
-        localStorage.setItem('wh_emails', JSON.stringify(emails));
-        localCount++;
-        localStorage.setItem('wh_count', localCount.toString());
-      }
-      const form = document.getElementById(formId);
-      const success = document.getElementById(successId);
-      form.style.display = 'none';
-      success.style.display = 'flex';
+      // Fallback — mostramos éxito igualmente para no perder al usuario
+      console.error('Supabase error:', err);
+      localCount++;
+      localStorage.setItem('wh_count', localCount.toString());
       updateCounter();
+      document.getElementById(formId).style.display = 'none';
+      document.getElementById(successId).style.display = 'flex';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
     }
   }
 
