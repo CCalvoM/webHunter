@@ -105,11 +105,12 @@ create policy "pipeline_events_own" on pipeline_events using (auth.uid() = user_
 create or replace function handle_new_user()
 returns trigger as $$
 begin
-  insert into credits (user_id, plan, searches_used, searches_limit, audits_used, audits_limit, reset_date)
-  values (new.id, 'free', 0, 20, 0, 5, null);
+  insert into public.credits (user_id, plan, searches_used, searches_limit, audits_used, audits_limit, reset_date)
+  values (new.id, 'free', 0, 20, 0, 5, null)
+  on conflict (user_id) do nothing;
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
