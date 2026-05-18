@@ -13,6 +13,15 @@ export default {
         sans: ['DM Sans', 'system-ui', 'sans-serif'],
         display: ['Syne', 'system-ui', 'sans-serif'],
       },
+      keyframes: {
+        toast: {
+          '0%':   { transform: 'translateY(8px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)',   opacity: '1' },
+        },
+      },
+      animation: {
+        toast: 'toast 0.18s ease-out',
+      },
     },
   },
   plugins: [],

@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult } from '@hello-pangea/dnd'
 import { useAuth } from '../hooks/useAuth'
 import { useProspects } from '../hooks/useProspects'
+import { useToast } from '../contexts/ToastContext'
 import type { PipelineStage, Prospect } from '../types'
 
 const COLUMNS: { id: PipelineStage; label: string; color: string; dot: string }[] = [
@@ -64,6 +65,9 @@ export default function Pipeline() {
   const { user } = useAuth()
   const { prospects, loadProspects, updateStage, loading } = useProspects(user?.id)
   const navigate = useNavigate()
+  const { showToast } = useToast()
+
+  const [mobileStage, setMobileStage] = useState<PipelineStage>('encontrado')
 
   useEffect(() => { loadProspects() }, [loadProspects])
 
@@ -78,6 +82,8 @@ export default function Pipeline() {
     const fromStage = source.droppableId as PipelineStage
     const toStage = destination.droppableId as PipelineStage
     await updateStage(draggableId, toStage, fromStage)
+    const col = COLUMNS.find(c => c.id === toStage)
+    if (col) showToast(`Movido a ${col.label}`, 'info')
   }
 
   if (loading) {
@@ -102,68 +108,119 @@ export default function Pipeline() {
   const activeProspects = prospects.filter(p => p.stage !== 'descartado')
 
   return (
-    <div className="p-6 h-full flex flex-col">
+    <div className="p-4 md:p-6 h-full flex flex-col">
 
-      <div className="mb-6">
+      <div className="mb-4 md:mb-6">
         <h1 className="font-display font-bold text-2xl text-ink">Pipeline</h1>
-        <p className="text-ink-muted text-sm mt-1">
+        <p className="text-ink-muted text-sm mt-1 hidden md:block">
           {activeProspects.length} leads activos · Arrastra para cambiar etapa · Click para ver detalle
+        </p>
+        <p className="text-ink-muted text-sm mt-1 md:hidden">
+          {activeProspects.length} leads activos
         </p>
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4 flex-1">
+      {/* ── Vista móvil: tabs + lista vertical ─────────────────────────── */}
+      <div className="md:hidden flex flex-col flex-1">
+        {/* Stage tabs */}
+        <div className="flex gap-1.5 overflow-x-auto pb-3 mb-3 -mx-4 px-4">
           {COLUMNS.map(col => {
-            const colProspects = getByStage(col.id)
+            const count = getByStage(col.id).length
             return (
-              <div key={col.id} className="flex-shrink-0 w-60">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className={`w-2 h-2 rounded-full ${col.dot}`} />
-                  <span className="text-xs font-medium text-ink">{col.label}</span>
-                  <span className="ml-auto text-xs text-ink-faint bg-black/5 px-1.5 py-0.5 rounded-full">
-                    {colProspects.length}
-                  </span>
-                </div>
-
-                <Droppable droppableId={col.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`min-h-24 rounded-xl p-2 space-y-2 transition-colors ${
-                        snapshot.isDraggingOver ? 'bg-accent-light' : col.color
-                      }`}
-                    >
-                      {colProspects.map((prospect, index) => (
-                        <Draggable key={prospect.id} draggableId={prospect.id} index={index}>
-                          {(provided, snapshot) => (
-                            <div
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.85 : 1 }}
-                            >
-                              <ProspectCard
-                                prospect={prospect}
-                                onClick={() => navigate(`/app/prospect/${prospect.id}`)}
-                              />
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-
-                      {colProspects.length === 0 && !snapshot.isDraggingOver && (
-                        <div className="text-center py-6 text-xs text-ink-faint">Arrastra aquí</div>
-                      )}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
+              <button
+                key={col.id}
+                onClick={() => setMobileStage(col.id)}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  mobileStage === col.id
+                    ? 'bg-ink text-white'
+                    : 'bg-white border border-black/10 text-ink-muted'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${col.dot}`} />
+                {col.label}
+                <span className={`rounded-full px-1.5 text-xs leading-5 ${
+                  mobileStage === col.id ? 'bg-white/20 text-white' : 'bg-black/8 text-ink-faint'
+                }`}>
+                  {count}
+                </span>
+              </button>
             )
           })}
         </div>
-      </DragDropContext>
+
+        {/* Cards de la etapa seleccionada */}
+        <div className="space-y-2 overflow-y-auto flex-1">
+          {getByStage(mobileStage).map(prospect => (
+            <ProspectCard
+              key={prospect.id}
+              prospect={prospect}
+              onClick={() => navigate(`/app/prospect/${prospect.id}`)}
+            />
+          ))}
+          {getByStage(mobileStage).length === 0 && (
+            <div className="text-center py-16 text-ink-faint text-sm">
+              Sin leads en esta etapa
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Vista desktop: kanban drag & drop ──────────────────────────── */}
+      <div className="hidden md:flex flex-col flex-1">
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="flex gap-4 overflow-x-auto pb-4 flex-1">
+            {COLUMNS.map(col => {
+              const colProspects = getByStage(col.id)
+              return (
+                <div key={col.id} className="flex-shrink-0 w-60">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`w-2 h-2 rounded-full ${col.dot}`} />
+                    <span className="text-xs font-medium text-ink">{col.label}</span>
+                    <span className="ml-auto text-xs text-ink-faint bg-black/5 px-1.5 py-0.5 rounded-full">
+                      {colProspects.length}
+                    </span>
+                  </div>
+
+                  <Droppable droppableId={col.id}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`min-h-24 rounded-xl p-2 space-y-2 transition-colors ${
+                          snapshot.isDraggingOver ? 'bg-accent-light' : col.color
+                        }`}
+                      >
+                        {colProspects.map((prospect, index) => (
+                          <Draggable key={prospect.id} draggableId={prospect.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.85 : 1 }}
+                              >
+                                <ProspectCard
+                                  prospect={prospect}
+                                  onClick={() => navigate(`/app/prospect/${prospect.id}`)}
+                                />
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+
+                        {colProspects.length === 0 && !snapshot.isDraggingOver && (
+                          <div className="text-center py-6 text-xs text-ink-faint">Arrastra aquí</div>
+                        )}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              )
+            })}
+          </div>
+        </DragDropContext>
+      </div>
 
     </div>
   )

@@ -9,6 +9,7 @@ import { useProspects } from '../hooks/useProspects'
 import { useActivities } from '../hooks/useActivities'
 import { useCredits } from '../hooks/useCredits'
 import { useDataFlags } from '../hooks/useDataFlags'
+import { useToast } from '../contexts/ToastContext'
 import { generateAudit } from '../lib/audit'
 import { getAuditIssues } from '../lib/places'
 import type { AuditResult, FlagType, PipelineStage, Prospect } from '../types'
@@ -124,6 +125,7 @@ export default function ProspectPage() {
   const { activities, loadActivities, logActivity } = useActivities(user?.id)
   const { credits, loadCredits, consumeAudit, canAudit } = useCredits(user?.id)
   const { submitFlag } = useDataFlags(user?.id)
+  const { showToast } = useToast()
 
   const [prospect, setProspect] = useState<Prospect | null>(null)
   const [loadingProspect, setLoadingProspect] = useState(true)
@@ -155,6 +157,7 @@ export default function ProspectPage() {
     if (!prospect) return
     await updateStage(prospect.id, stage, prospect.stage)
     setProspect(prev => prev ? { ...prev, stage } : null)
+    showToast(`Etapa: ${STAGE_LABELS[stage]}`, 'info')
   }
 
   const handleGenerateAudit = async () => {
@@ -177,8 +180,10 @@ export default function ProspectPage() {
         audit_summary: result.issues.join(' | '),
         web_status: result.web_status,
       } : null)
+      showToast('Audit generado con IA')
     } catch (err) {
       setAuditError('No se pudo generar el audit. Comprueba que la Edge Function está desplegada.')
+      showToast('Error al generar el audit', 'error')
     } finally {
       setGeneratingAudit(false)
     }
@@ -189,6 +194,7 @@ export default function ProspectPage() {
     await navigator.clipboard.writeText(prospect.audit_pitch)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+    showToast('Mensaje copiado al portapapeles')
   }
 
   const handleGmailDraft = () => {
@@ -204,6 +210,7 @@ export default function ProspectPage() {
     await updateProspect(prospect.id, { notes })
     await logActivity(prospect.id, 'note_added', notes.substring(0, 80))
     setSavingNotes(false)
+    showToast('Notas guardadas', 'info')
   }
 
   const handleSaveFollowup = async () => {
@@ -211,6 +218,7 @@ export default function ProspectPage() {
     await updateProspect(prospect.id, { followup_date: followupDate })
     await logActivity(prospect.id, 'followup_set', followupDate)
     setProspect(prev => prev ? { ...prev, followup_date: followupDate } : null)
+    showToast('Seguimiento guardado')
   }
 
   const handleDelete = async () => {

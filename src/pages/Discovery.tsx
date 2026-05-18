@@ -3,6 +3,7 @@ import { Search, MapPin, Globe, AlertCircle, Plus, ExternalLink, Zap } from 'luc
 import { useAuth } from '../hooks/useAuth'
 import { useProspects } from '../hooks/useProspects'
 import { useCredits } from '../hooks/useCredits'
+import { useToast } from '../contexts/ToastContext'
 import { searchPlaces, detectWebStatus, calculateAuditScore } from '../lib/places'
 import type { PlaceResult, WebStatus } from '../types'
 
@@ -33,6 +34,7 @@ export default function Discovery() {
   const { user } = useAuth()
   const { addProspect, prospects, loadProspects } = useProspects(user?.id)
   const { credits, loadCredits, consumeSearch, canSearch } = useCredits(user?.id)
+  const { showToast } = useToast()
 
   const [city, setCity] = useState('')
   const [sector, setSector] = useState('')
@@ -74,6 +76,7 @@ export default function Discovery() {
     const prospect = await addProspect(place, city, sector)
     if (prospect) {
       setAdded(prev => new Set(prev).add(place.place_id))
+      showToast(`${place.name} añadido al pipeline`)
     }
   }
 

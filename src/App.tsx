@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { ToastProvider } from './contexts/ToastContext'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import AppLayout from './pages/AppLayout'
 import Login from './pages/Login'
@@ -10,6 +11,7 @@ import ProspectPage from './pages/Prospect'
 
 export default function App() {
   return (
+    <ToastProvider>
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
@@ -24,5 +26,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/app" replace />} />
       </Routes>
     </BrowserRouter>
+    </ToastProvider>
   )
 }
