@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Discovery from './pages/Discovery'
 import Pipeline from './pages/Pipeline'
 import Settings from './pages/Settings'
+import ProspectPage from './pages/Prospect'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="discovery" element={<Discovery />} />
           <Route path="pipeline" element={<Pipeline />} />
+          <Route path="prospect/:id" element={<ProspectPage />} />
           <Route path="settings" element={<Settings />} />
         </Route>
         <Route path="/" element={<Navigate to="/app" replace />} />

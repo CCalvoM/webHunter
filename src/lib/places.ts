@@ -1,32 +1,29 @@
-import { supabase } from './supabase'
 import type { PlaceResult, WebStatus } from '../types'
 
-// ─── Buscar negocios — llama a la Edge Function, con fallback a mock en dev ──
-export async function searchPlaces(city: string, sector: string): Promise<PlaceResult[]> {
-  const query = `${sector} en ${city} España`
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
+const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_PLACES_KEY
 
+// ─── Buscar negocios via Edge Function (fallback a mock en dev) ───────────────
+export async function searchPlaces(city: string, sector: string): Promise<PlaceResult[]> {
   try {
-    const { data: { session } } = await supabase.auth.getSession()
-    const response = await fetch(
-      `${supabaseUrl}/functions/v1/places-search?query=${encodeURIComponent(query)}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/places-search`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
       },
-    )
+      body: JSON.stringify({ query: `${sector} en ${city} España` }),
+    })
 
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
     const data = await response.json()
     if (data.results?.length) return data.results as PlaceResult[]
 
-    // Si la Edge Function responde pero sin resultados, usamos mock igualmente
     return generateMockResults(city, sector)
   } catch {
-    // En desarrollo sin Edge Function desplegada, usamos datos de prueba
-    console.warn('[WebHunter] Edge Function no disponible — usando datos de prueba')
+    console.warn('[Cloza] Edge Function no disponible — usando datos de prueba')
     return generateMockResults(city, sector)
   }
 }
@@ -55,7 +52,7 @@ function generateMockResults(city: string, sector: string): PlaceResult[] {
   }))
 }
 
-// ─── Detectar estado web ──────────────────────────────────────────────────────
+// ─── Detectar estado web (síncrono, sin PageSpeed) ───────────────────────────
 export function detectWebStatus(place: PlaceResult): WebStatus {
   if (!place.website) return 'no_web'
 
@@ -86,14 +83,47 @@ export function detectWebStatus(place: PlaceResult): WebStatus {
   return 'has_web'
 }
 
-// ─── Calcular score de presencia digital ─────────────────────────────────────
-export function calculateAuditScore(place: PlaceResult): number {
-  let score = 0
+// ─── PageSpeed Insights — detectar webs rotas o lentas ───────────────────────
+export async function checkWebHealth(websiteUrl: string): Promise<WebStatus> {
+  try {
+    const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(websiteUrl)}&strategy=mobile&key=${GOOGLE_KEY}`
+    const res = await fetch(apiUrl)
+    if (!res.ok) return 'broken_web'
 
-  const webStatus = detectWebStatus(place)
-  if (webStatus === 'no_web')    score += 0
-  else if (webStatus === 'fake_web')  score += 10
-  else if (webStatus === 'poor_web')  score += 25
+    const data = await res.json()
+    const score: number = (data.lighthouseResult?.categories?.performance?.score ?? 0) * 100
+
+    if (score < 30) return 'broken_web'
+    if (score < 60) return 'poor_web'
+    return 'has_web'
+  } catch {
+    return 'broken_web'
+  }
+}
+
+// ─── Enriquecer resultados con PageSpeed en background ───────────────────────
+export async function enrichWithHealth(
+  results: PlaceResult[],
+  onUpdate: (placeId: string, status: WebStatus) => void,
+): Promise<void> {
+  const candidates = results.filter(r => detectWebStatus(r) === 'has_web' && r.website)
+  await Promise.allSettled(
+    candidates.map(async place => {
+      const enriched = await checkWebHealth(place.website!)
+      if (enriched !== 'has_web') onUpdate(place.place_id, enriched)
+    }),
+  )
+}
+
+// ─── Calcular score de presencia digital ─────────────────────────────────────
+export function calculateAuditScore(place: PlaceResult, webStatus?: WebStatus): number {
+  let score = 0
+  const status = webStatus ?? detectWebStatus(place)
+
+  if (status === 'no_web')       score += 0
+  else if (status === 'broken_web') score += 5
+  else if (status === 'fake_web')   score += 10
+  else if (status === 'poor_web')   score += 25
   else score += 50
 
   if (place.rating) {
@@ -115,20 +145,24 @@ export function calculateAuditScore(place: PlaceResult): number {
   return Math.min(score, 100)
 }
 
-// ─── Generar issues para el audit ────────────────────────────────────────────
-export function getAuditIssues(place: PlaceResult): string[] {
+// ─── Issues del audit (sin IA) ───────────────────────────────────────────────
+export function getAuditIssues(place: PlaceResult, webStatus?: WebStatus): string[] {
   const issues: string[] = []
-  const webStatus = detectWebStatus(place)
+  const status = webStatus ?? detectWebStatus(place)
 
-  if (webStatus === 'no_web') {
+  if (status === 'no_web') {
     issues.push('Sin página web — invisible para clientes que buscan en Google')
     issues.push('No aparece en búsquedas orgánicas de su sector')
     issues.push('Sin formulario de contacto ni reservas online')
-  } else if (webStatus === 'fake_web') {
+  } else if (status === 'broken_web') {
+    issues.push('La web no carga correctamente o es muy lenta en móvil')
+    issues.push('Google penaliza las webs lentas — baja visibilidad en búsquedas')
+    issues.push('Los clientes abandonan webs que tardan más de 3 segundos')
+  } else if (status === 'fake_web') {
     issues.push('Usa una red social como página web — no indexable en Google')
     issues.push('Sin dominio propio — poca credibilidad')
     issues.push('Dependiente de algoritmos de redes sociales')
-  } else if (webStatus === 'poor_web') {
+  } else if (status === 'poor_web') {
     issues.push('Web en plataforma gratuita con subdominio genérico')
     issues.push('Posiblemente no optimizada para móvil ni para SEO')
     issues.push('Sin control total sobre su presencia online')
@@ -137,7 +171,6 @@ export function getAuditIssues(place: PlaceResult): string[] {
   if (!place.formatted_phone_number) {
     issues.push('Sin teléfono de contacto visible en Google Maps')
   }
-
   if (!place.rating || (place.user_ratings_total ?? 0) < 20) {
     issues.push('Pocas reseñas en Google — baja visibilidad local')
   }

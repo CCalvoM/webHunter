@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import type { DropResult } from '@hello-pangea/dnd'
 import { useAuth } from '../hooks/useAuth'
 import { useProspects } from '../hooks/useProspects'
-import { useActivities } from '../hooks/useActivities'
-import ProspectModal from '../components/ProspectModal'
-import type { PipelineStage, Prospect, AuditResult } from '../types'
+import type { PipelineStage, Prospect } from '../types'
 
 const COLUMNS: { id: PipelineStage; label: string; color: string; dot: string }[] = [
   { id: 'encontrado', label: 'Encontrado',  color: 'bg-gray-50',   dot: 'bg-gray-400' },
@@ -16,24 +15,19 @@ const COLUMNS: { id: PipelineStage; label: string; color: string; dot: string }[
 ]
 
 const WEB_STATUS_COLORS: Record<string, string> = {
-  no_web:   'bg-red-50 text-red-600',
-  fake_web: 'bg-amber-50 text-amber-700',
-  poor_web: 'bg-yellow-50 text-yellow-700',
-  has_web:  'bg-green-50 text-green-600',
+  no_web:     'bg-red-50 text-red-600',
+  fake_web:   'bg-amber-50 text-amber-700',
+  broken_web: 'bg-orange-50 text-orange-600',
+  poor_web:   'bg-yellow-50 text-yellow-700',
+  has_web:    'bg-green-50 text-green-600',
 }
 
 const WEB_STATUS_LABELS: Record<string, string> = {
   no_web: 'Sin web', fake_web: 'Web falsa',
-  poor_web: 'Web pobre', has_web: 'Con web',
+  broken_web: 'Web rota', poor_web: 'Web pobre', has_web: 'Con web',
 }
 
-function ProspectCard({
-  prospect,
-  onClick,
-}: {
-  prospect: Prospect
-  onClick: () => void
-}) {
+function ProspectCard({ prospect, onClick }: { prospect: Prospect; onClick: () => void }) {
   return (
     <div
       onClick={onClick}
@@ -59,67 +53,70 @@ function ProspectCard({
           📅 {new Date(prospect.followup_date).toLocaleDateString('es-ES')}
         </div>
       )}
+      {prospect.audit_pitch && (
+        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-green inline-block" title="Audit generado" />
+      )}
     </div>
   )
 }
 
 export default function Pipeline() {
   const { user } = useAuth()
-  const { prospects, loadProspects, updateStage, updateProspect, deleteProspect, saveAudit, loading } = useProspects(user?.id)
-  const { logActivity } = useActivities(user?.id)
-
-  const [selectedProspect, setSelectedProspect] = useState<Prospect | null>(null)
+  const { prospects, loadProspects, updateStage, loading } = useProspects(user?.id)
+  const navigate = useNavigate()
 
   useEffect(() => { loadProspects() }, [loadProspects])
 
-  // Sincronizar el prospecto seleccionado con cambios en la lista (e.g. tras actualizar notas)
-  useEffect(() => {
-    if (selectedProspect) {
-      const updated = prospects.find(p => p.id === selectedProspect.id)
-      if (updated) setSelectedProspect(updated)
-    }
-  }, [prospects]) // eslint-disable-line react-hooks/exhaustive-deps
-
   const getByStage = (stage: PipelineStage): Prospect[] =>
-    prospects.filter(p => p.stage === stage)
+    prospects.filter(p => p.stage === stage && p.stage !== 'descartado')
 
   const onDragEnd = async (result: DropResult) => {
     if (!result.destination) return
     const { draggableId, source, destination } = result
     if (source.droppableId === destination.droppableId) return
 
-    const newStage = destination.droppableId as PipelineStage
-    await updateStage(draggableId, newStage)
-    await logActivity(draggableId, 'stage_changed', newStage)
+    const fromStage = source.droppableId as PipelineStage
+    const toStage = destination.droppableId as PipelineStage
+    await updateStage(draggableId, toStage, fromStage)
   }
 
   if (loading) {
     return (
-      <div className="p-6 flex items-center justify-center h-full">
-        <p className="text-ink-muted text-sm">Cargando pipeline...</p>
+      <div className="p-6 flex flex-col h-full">
+        <div className="mb-6">
+          <div className="h-7 bg-black/6 rounded-lg w-32 mb-2 animate-pulse" />
+          <div className="h-4 bg-black/4 rounded w-48 animate-pulse" />
+        </div>
+        <div className="flex gap-4 flex-1">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex-shrink-0 w-60">
+              <div className="h-4 bg-black/6 rounded w-24 mb-3 animate-pulse" />
+              <div className="min-h-24 rounded-xl bg-black/4 animate-pulse" />
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
 
+  const activeProspects = prospects.filter(p => p.stage !== 'descartado')
+
   return (
     <div className="p-6 h-full flex flex-col">
 
-      {/* Header */}
       <div className="mb-6">
         <h1 className="font-display font-bold text-2xl text-ink">Pipeline</h1>
         <p className="text-ink-muted text-sm mt-1">
-          {prospects.length} leads · Arrastra para cambiar etapa · Haz click para ver detalle
+          {activeProspects.length} leads activos · Arrastra para cambiar etapa · Click para ver detalle
         </p>
       </div>
 
-      {/* Kanban */}
       <DragDropContext onDragEnd={onDragEnd}>
         <div className="flex gap-4 overflow-x-auto pb-4 flex-1">
           {COLUMNS.map(col => {
             const colProspects = getByStage(col.id)
             return (
               <div key={col.id} className="flex-shrink-0 w-60">
-
                 <div className="flex items-center gap-2 mb-3">
                   <div className={`w-2 h-2 rounded-full ${col.dot}`} />
                   <span className="text-xs font-medium text-ink">{col.label}</span>
@@ -144,14 +141,11 @@ export default function Pipeline() {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              style={{
-                                ...provided.draggableProps.style,
-                                opacity: snapshot.isDragging ? 0.85 : 1,
-                              }}
+                              style={{ ...provided.draggableProps.style, opacity: snapshot.isDragging ? 0.85 : 1 }}
                             >
                               <ProspectCard
                                 prospect={prospect}
-                                onClick={() => setSelectedProspect(prospect)}
+                                onClick={() => navigate(`/app/prospect/${prospect.id}`)}
                               />
                             </div>
                           )}
@@ -160,31 +154,16 @@ export default function Pipeline() {
                       {provided.placeholder}
 
                       {colProspects.length === 0 && !snapshot.isDraggingOver && (
-                        <div className="text-center py-6 text-xs text-ink-faint">
-                          Arrastra aquí
-                        </div>
+                        <div className="text-center py-6 text-xs text-ink-faint">Arrastra aquí</div>
                       )}
                     </div>
                   )}
                 </Droppable>
-
               </div>
             )
           })}
         </div>
       </DragDropContext>
-
-      {/* Modal de detalle */}
-      {selectedProspect && user && (
-        <ProspectModal
-          prospect={selectedProspect}
-          userId={user.id}
-          onClose={() => setSelectedProspect(null)}
-          onUpdate={updateProspect}
-          onDelete={deleteProspect}
-          onSaveAudit={saveAudit}
-        />
-      )}
 
     </div>
   )

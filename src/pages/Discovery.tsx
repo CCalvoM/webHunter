@@ -14,17 +14,19 @@ const SECTORS = [
 ]
 
 const WEB_STATUS_LABELS: Record<WebStatus, string> = {
-  no_web:   'Sin web',
-  fake_web: 'Web falsa',
-  poor_web: 'Web pobre',
-  has_web:  'Con web',
+  no_web:      'Sin web',
+  fake_web:    'Web falsa',
+  broken_web:  'Web rota',
+  poor_web:    'Web pobre',
+  has_web:     'Con web',
 }
 
 const WEB_STATUS_COLORS: Record<WebStatus, string> = {
-  no_web:   'bg-red-50 text-red-600',
-  fake_web: 'bg-amber-50 text-amber-700',
-  poor_web: 'bg-yellow-50 text-yellow-700',
-  has_web:  'bg-green-50 text-green-600',
+  no_web:      'bg-red-50 text-red-600',
+  fake_web:    'bg-amber-50 text-amber-700',
+  broken_web:  'bg-orange-50 text-orange-600',
+  poor_web:    'bg-yellow-50 text-yellow-700',
+  has_web:     'bg-green-50 text-green-600',
 }
 
 export default function Discovery() {
@@ -168,7 +170,7 @@ export default function Discovery() {
               )}
             </div>
             <div className="flex gap-1">
-              {(['all', 'no_web', 'fake_web', 'poor_web'] as const).map(status => (
+              {(['all', 'no_web', 'fake_web', 'broken_web', 'poor_web'] as const).map(status => (
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}

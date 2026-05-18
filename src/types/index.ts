@@ -6,13 +6,12 @@ export interface User {
 }
 
 // ─── Prospects ───────────────────────────────────────────────
-export type WebStatus = 'no_web' | 'fake_web' | 'poor_web' | 'has_web'
+export type WebStatus = 'no_web' | 'fake_web' | 'broken_web' | 'poor_web' | 'has_web'
 export type PipelineStage = 'encontrado' | 'contactado' | 'respondio' | 'demo' | 'cerrado' | 'descartado'
 
 export interface Prospect {
   id: string
   user_id: string
-  // Datos de Google Places
   place_id: string
   name: string
   address: string
@@ -23,22 +22,26 @@ export interface Prospect {
   rating?: number
   review_count?: number
   category: string
-  // Análisis WebHunter
   web_status: WebStatus
   audit_score?: number
   audit_summary?: string
   audit_pitch?: string
-  // Pipeline
   stage: PipelineStage
   notes?: string
   followup_date?: string
-  // Meta
   created_at: string
   updated_at: string
 }
 
 // ─── Activity ────────────────────────────────────────────────
-export type ActivityType = 'created' | 'stage_changed' | 'email_sent' | 'note_added' | 'followup_set' | 'audit_generated'
+export type ActivityType =
+  | 'created'
+  | 'stage_changed'
+  | 'email_sent'
+  | 'note_added'
+  | 'followup_set'
+  | 'audit_generated'
+  | 'data_flagged'
 
 export interface Activity {
   id: string
@@ -96,11 +99,39 @@ export interface SearchFilters {
 
 // ─── Audit ───────────────────────────────────────────────────
 export interface AuditResult {
-  score: number           // 0-100, cuanto más bajo peor presencia digital
+  score: number
   web_status: WebStatus
-  issues: string[]        // qué le falta
-  lost_clients_estimate: string  // "~15 clientes/mes"
-  pitch: string           // mensaje de venta generado por Claude
+  issues: string[]
+  lost_clients_estimate: string
+  pitch: string
+}
+
+// ─── Data Flags ──────────────────────────────────────────────
+export type FlagType =
+  | 'wrong_address'
+  | 'wrong_phone'
+  | 'wrong_website'
+  | 'business_closed'
+  | 'already_has_web'
+  | 'other'
+
+export interface DataFlag {
+  id: string
+  prospect_id: string
+  user_id: string
+  flag_type: FlagType
+  notes?: string
+  created_at: string
+}
+
+// ─── Pipeline Events ─────────────────────────────────────────
+export interface PipelineEvent {
+  id: string
+  prospect_id: string
+  user_id: string
+  from_stage: PipelineStage | null
+  to_stage: PipelineStage
+  created_at: string
 }
 
 // ─── Pipeline ────────────────────────────────────────────────

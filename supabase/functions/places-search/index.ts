@@ -9,7 +9,7 @@ const GOOGLE_PLACES_KEY = Deno.env.get('GOOGLE_PLACES_KEY') ?? ''
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req: Request) => {
@@ -17,12 +17,15 @@ serve(async (req: Request) => {
     return new Response('ok', { headers: CORS_HEADERS })
   }
 
-  const url = new URL(req.url)
-  const query = url.searchParams.get('query')
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS })
+  }
+
+  const { query } = await req.json()
 
   if (!query) {
     return new Response(
-      JSON.stringify({ error: 'Parámetro query requerido' }),
+      JSON.stringify({ error: 'Campo query requerido', results: [] }),
       { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
     )
   }

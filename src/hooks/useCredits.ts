@@ -50,8 +50,12 @@ export function useCredits(userId: string | undefined) {
     return false
   }, [credits, userId])
 
+  // Plan free: límite de por vida (sin reset mensual)
+  // Plan pro: límite mensual con reset automático
   const canSearch = credits ? credits.searches_used < credits.searches_limit : true
   const canAudit = credits ? credits.audits_used < credits.audits_limit : true
 
-  return { credits, loading, loadCredits, consumeSearch, consumeAudit, canSearch, canAudit }
+  const isLifetime = credits?.plan === 'free'
+
+  return { credits, loading, loadCredits, consumeSearch, consumeAudit, canSearch, canAudit, isLifetime }
 }

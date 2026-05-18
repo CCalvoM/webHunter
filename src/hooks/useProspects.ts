@@ -8,7 +8,6 @@ export function useProspects(userId: string | undefined) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // ─── Cargar todos los prospectos del usuario ──────────────
   const loadProspects = useCallback(async () => {
     if (!userId) return
     setLoading(true)
@@ -23,7 +22,17 @@ export function useProspects(userId: string | undefined) {
     setLoading(false)
   }, [userId])
 
-  // ─── Añadir prospecto desde resultado de Places ───────────
+  // Cargar un prospecto concreto por id (para la página de detalle)
+  const loadProspect = useCallback(async (id: string): Promise<Prospect | null> => {
+    const { data, error } = await supabase
+      .from('prospects')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error) return null
+    return data
+  }, [])
+
   const addProspect = useCallback(async (place: PlaceResult, city: string, sector: string): Promise<Prospect | null> => {
     if (!userId) return null
 
@@ -54,31 +63,59 @@ export function useProspects(userId: string | undefined) {
       .single()
 
     if (error) {
-      // Si ya existe (mismo place_id + user_id), no es error crítico
       if (error.code === '23505') return null
       setError(error.message)
       return null
     }
 
+    // Registrar actividad de creación
+    await supabase.from('activities').insert({
+      prospect_id: data.id,
+      user_id: userId,
+      type: 'created',
+    })
+    // Registrar pipeline event inicial
+    await supabase.from('pipeline_events').insert({
+      prospect_id: data.id,
+      user_id: userId,
+      from_stage: null,
+      to_stage: 'encontrado',
+    })
+
     setProspects(prev => [data, ...prev])
     return data
   }, [userId])
 
-  // ─── Cambiar etapa en el pipeline ────────────────────────
-  const updateStage = useCallback(async (prospectId: string, stage: PipelineStage) => {
+  const updateStage = useCallback(async (
+    prospectId: string,
+    stage: PipelineStage,
+    fromStage?: PipelineStage,
+  ) => {
     const { error } = await supabase
       .from('prospects')
       .update({ stage, updated_at: new Date().toISOString() })
       .eq('id', prospectId)
 
     if (!error) {
-      setProspects(prev => prev.map(p =>
-        p.id === prospectId ? { ...p, stage } : p
-      ))
-    }
-  }, [])
+      setProspects(prev => prev.map(p => p.id === prospectId ? { ...p, stage } : p))
 
-  // ─── Guardar audit generado por Claude ───────────────────
+      // Pipeline event
+      await supabase.from('pipeline_events').insert({
+        prospect_id: prospectId,
+        user_id: userId,
+        from_stage: fromStage ?? null,
+        to_stage: stage,
+      })
+      // Activity
+      await supabase.from('activities').insert({
+        prospect_id: prospectId,
+        user_id: userId,
+        type: 'stage_changed',
+        content: stage,
+      })
+    }
+  }, [userId])
+
   const saveAudit = useCallback(async (prospectId: string, audit: AuditResult) => {
     const { error } = await supabase
       .from('prospects')
@@ -94,13 +131,12 @@ export function useProspects(userId: string | undefined) {
     if (!error) {
       setProspects(prev => prev.map(p =>
         p.id === prospectId
-          ? { ...p, audit_score: audit.score, audit_pitch: audit.pitch }
-          : p
+          ? { ...p, audit_score: audit.score, audit_pitch: audit.pitch, web_status: audit.web_status }
+          : p,
       ))
     }
   }, [])
 
-  // ─── Actualizar notas y seguimiento ──────────────────────
   const updateProspect = useCallback(async (prospectId: string, updates: Partial<Prospect>) => {
     const { error } = await supabase
       .from('prospects')
@@ -108,19 +144,12 @@ export function useProspects(userId: string | undefined) {
       .eq('id', prospectId)
 
     if (!error) {
-      setProspects(prev => prev.map(p =>
-        p.id === prospectId ? { ...p, ...updates } : p
-      ))
+      setProspects(prev => prev.map(p => p.id === prospectId ? { ...p, ...updates } : p))
     }
   }, [])
 
-  // ─── Eliminar prospecto ───────────────────────────────────
   const deleteProspect = useCallback(async (prospectId: string) => {
-    const { error } = await supabase
-      .from('prospects')
-      .delete()
-      .eq('id', prospectId)
-
+    const { error } = await supabase.from('prospects').delete().eq('id', prospectId)
     if (!error) {
       setProspects(prev => prev.filter(p => p.id !== prospectId))
     }
@@ -131,6 +160,7 @@ export function useProspects(userId: string | undefined) {
     loading,
     error,
     loadProspects,
+    loadProspect,
     addProspect,
     updateStage,
     saveAudit,

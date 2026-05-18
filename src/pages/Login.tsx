@@ -16,7 +16,7 @@ export default function Login() {
                 <line x1="12" y1="12" x2="16" y2="16" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
               </svg>
             </div>
-            <span className="font-display font-bold text-2xl text-ink">WebHunter</span>
+            <span className="font-display font-bold text-2xl text-ink">Cloza</span>
           </div>
           <p className="text-ink-muted text-sm">Autogestiona tus ventas de páginas web</p>
         </div>

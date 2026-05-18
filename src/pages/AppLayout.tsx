@@ -1,23 +1,31 @@
+import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Search, Kanban, BarChart2, Settings, LogOut } from 'lucide-react'
+import { Search, Kanban, BarChart2, Settings, LogOut, Zap } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { useCredits } from '../hooks/useCredits'
 import clsx from 'clsx'
 
 const NAV_ITEMS = [
-  { to: '/app', label: 'Dashboard', icon: BarChart2, end: true },
-  { to: '/app/discovery', label: 'Buscar negocios', icon: Search, end: false },
-  { to: '/app/pipeline', label: 'Pipeline', icon: Kanban, end: false },
-  { to: '/app/settings', label: 'Ajustes', icon: Settings, end: false },
+  { to: '/app',            label: 'Dashboard',      icon: BarChart2, end: true },
+  { to: '/app/discovery',  label: 'Buscar negocios', icon: Search,    end: false },
+  { to: '/app/pipeline',   label: 'Pipeline',        icon: Kanban,    end: false },
+  { to: '/app/settings',   label: 'Ajustes',         icon: Settings,  end: false },
 ]
 
 export default function AppLayout() {
   const { user, signOut } = useAuth()
+  const { credits, loadCredits } = useCredits(user?.id)
   const navigate = useNavigate()
+
+  useEffect(() => { loadCredits() }, [loadCredits])
 
   const handleSignOut = async () => {
     await signOut()
     navigate('/login')
   }
+
+  const searchesLeft = credits ? credits.searches_limit - credits.searches_used : null
+  const searchesPct = credits ? (credits.searches_used / credits.searches_limit) * 100 : 0
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -33,7 +41,7 @@ export default function AppLayout() {
               <line x1="12" y1="12" x2="16" y2="16" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
             </svg>
           </div>
-          <span className="font-display font-bold text-base text-ink">WebHunter</span>
+          <span className="font-display font-bold text-base text-ink">Cloza</span>
         </div>
 
         {/* Nav */}
@@ -47,7 +55,7 @@ export default function AppLayout() {
                 'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
                 isActive
                   ? 'bg-accent-light text-accent'
-                  : 'text-ink-muted hover:bg-black/5 hover:text-ink'
+                  : 'text-ink-muted hover:bg-black/5 hover:text-ink',
               )}
             >
               <Icon size={16} />
@@ -55,6 +63,32 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </nav>
+
+        {/* Credits counter */}
+        {credits && searchesLeft !== null && (
+          <div className="px-3 pb-2">
+            <div className="bg-surface rounded-xl p-3">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-1 text-xs text-ink-muted">
+                  <Zap size={11} className={searchesPct >= 80 ? 'text-red-400' : 'text-accent'} />
+                  Búsquedas
+                </div>
+                <span className={`text-xs font-medium ${searchesPct >= 80 ? 'text-red-500' : 'text-ink-muted'}`}>
+                  {credits.searches_used}/{credits.searches_limit}
+                </span>
+              </div>
+              <div className="h-1 bg-black/8 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${searchesPct >= 80 ? 'bg-red-400' : 'bg-accent'}`}
+                  style={{ width: `${Math.min(searchesPct, 100)}%` }}
+                />
+              </div>
+              {searchesLeft === 0 && (
+                <p className="text-xs text-red-500 mt-1">Límite alcanzado</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* User */}
         <div className="border-t border-black/8 p-3">
@@ -66,7 +100,7 @@ export default function AppLayout() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium text-ink truncate">{user?.email}</div>
-              <div className="text-xs text-ink-faint">Plan Free</div>
+              <div className="text-xs text-ink-faint capitalize">{credits?.plan ?? 'Free'}</div>
             </div>
           </div>
           <button
@@ -79,7 +113,7 @@ export default function AppLayout() {
         </div>
       </aside>
 
-      {/* Main content */}
+      {/* Main */}
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>

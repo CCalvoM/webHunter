@@ -171,7 +171,9 @@ export default function Settings() {
           {/* Créditos */}
           {credits && (
             <div className="pt-2 border-t border-black/6">
-              <label className="text-xs text-ink-muted font-medium block mb-3">Uso este mes</label>
+              <label className="text-xs text-ink-muted font-medium block mb-3">
+                {credits.plan === 'free' ? 'Uso total (vitalicio)' : 'Uso este mes'}
+              </label>
               <div className="space-y-3">
                 <div>
                   <div className="flex items-center justify-between text-xs mb-1">
@@ -203,7 +205,12 @@ export default function Settings() {
                 </div>
               </div>
               <p className="text-xs text-ink-faint mt-2">
-                Reseteo el {new Date(credits.reset_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
+                {credits.plan === 'free'
+                  ? 'Plan gratuito — límite de por vida, sin reseteo'
+                  : credits.reset_date
+                    ? `Reseteo el ${new Date(credits.reset_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`
+                    : null
+                }
               </p>
             </div>
           )}
