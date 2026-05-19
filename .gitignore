@@ -17,6 +17,12 @@ dist
 dist-ssr
 *.local
 
+# Supabase CLI temp files
+supabase/.temp/
+
+# Claude Code local settings
+.claude/settings.local.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
