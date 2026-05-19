@@ -26,6 +26,8 @@ export interface Prospect {
   audit_score?: number
   audit_summary?: string
   audit_pitch?: string
+  pagespeed_score?: number
+  pagespeed_seo?: number
   stage: PipelineStage
   notes?: string
   followup_date?: string

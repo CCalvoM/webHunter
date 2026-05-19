@@ -33,7 +33,7 @@ const WEB_STATUS_COLORS: Record<WebStatus, string> = {
 export default function Discovery() {
   const { user } = useAuth()
   const { addProspect, prospects, loadProspects } = useProspects(user?.id)
-  const { credits, loadCredits, consumeSearch, canSearch } = useCredits(user?.id)
+  const { credits, loadCredits, canSearch } = useCredits(user?.id)
   const { showToast } = useToast()
 
   const [city, setCity] = useState('')
@@ -64,9 +64,13 @@ export default function Discovery() {
     try {
       const data = await searchPlaces(city, sector)
       setResults(data)
-      await consumeSearch()
-    } catch {
-      setSearchError('Error al buscar negocios. Inténtalo de nuevo.')
+      loadCredits()
+    } catch (err) {
+      if (err instanceof Error && err.message === 'CREDITS_EXHAUSTED') {
+        setSearchError(`Has alcanzado el límite de ${credits?.searches_limit ?? ''} búsquedas.`)
+      } else {
+        setSearchError('Error al buscar negocios. Inténtalo de nuevo.')
+      }
     } finally {
       setSearching(false)
     }
@@ -80,9 +84,9 @@ export default function Discovery() {
     }
   }
 
-  const filtered = results.filter(r =>
-    filterStatus === 'all' ? true : detectWebStatus(r) === filterStatus,
-  )
+  const filtered = results
+    .filter(r => (r.user_ratings_total ?? 0) <= 1000)
+    .filter(r => filterStatus === 'all' ? true : detectWebStatus(r) === filterStatus)
 
   const noWebCount   = results.filter(r => detectWebStatus(r) === 'no_web').length
   const fakeWebCount = results.filter(r => detectWebStatus(r) === 'fake_web').length
@@ -200,13 +204,14 @@ export default function Discovery() {
                 <div key={place.place_id} className="card hover:border-black/20 transition-all">
                   <div className="flex items-start gap-4">
 
-                    {/* Score */}
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold ${
+                    {/* Score estimado */}
+                    <div className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center flex-shrink-0 flex-shrink-0 ${
                       score < 30 ? 'bg-red-50 text-red-600' :
                       score < 55 ? 'bg-amber-50 text-amber-700' :
                       'bg-green-50 text-green-600'
                     }`}>
-                      {score}
+                      <span className="text-sm font-bold leading-none">{score}</span>
+                      <span className="text-[9px] opacity-60 leading-none mt-0.5">est.</span>
                     </div>
 
                     {/* Info */}

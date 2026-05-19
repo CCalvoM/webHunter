@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Search, Kanban, BarChart2, Settings, LogOut, Zap } from 'lucide-react'
+import { Search, Kanban, BarChart2, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useCredits } from '../hooks/useCredits'
 import clsx from 'clsx'
@@ -24,8 +24,6 @@ export default function AppLayout() {
     navigate('/login')
   }
 
-  const searchesLeft = credits ? credits.searches_limit - credits.searches_used : null
-  const searchesPct = credits ? (credits.searches_used / credits.searches_limit) * 100 : 0
 
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
@@ -64,31 +62,6 @@ export default function AppLayout() {
           ))}
         </nav>
 
-        {/* Credits counter */}
-        {credits && searchesLeft !== null && (
-          <div className="px-3 pb-2">
-            <div className="bg-surface rounded-xl p-3">
-              <div className="flex items-center justify-between mb-1.5">
-                <div className="flex items-center gap-1 text-xs text-ink-muted">
-                  <Zap size={11} className={searchesPct >= 80 ? 'text-red-400' : 'text-accent'} />
-                  Búsquedas
-                </div>
-                <span className={`text-xs font-medium ${searchesPct >= 80 ? 'text-red-500' : 'text-ink-muted'}`}>
-                  {credits.searches_used}/{credits.searches_limit}
-                </span>
-              </div>
-              <div className="h-1 bg-black/8 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${searchesPct >= 80 ? 'bg-red-400' : 'bg-accent'}`}
-                  style={{ width: `${Math.min(searchesPct, 100)}%` }}
-                />
-              </div>
-              {searchesLeft === 0 && (
-                <p className="text-xs text-red-500 mt-1">Límite alcanzado</p>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* User */}
         <div className="border-t border-black/8 p-3">

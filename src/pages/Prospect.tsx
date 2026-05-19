@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   ArrowLeft, Copy, Check, Sparkles, Calendar, FileText,
-  Trash2, ExternalLink, Phone, Globe, AlertCircle, Flag, MapPin,
+  Trash2, ExternalLink, Phone, Globe, AlertCircle, Flag, MapPin, Loader2,
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useProspects } from '../hooks/useProspects'
@@ -123,7 +123,7 @@ export default function ProspectPage() {
   const { user } = useAuth()
   const { loadProspect, updateStage, saveAudit, updateProspect, deleteProspect } = useProspects(user?.id)
   const { activities, loadActivities, logActivity } = useActivities(user?.id)
-  const { credits, loadCredits, consumeAudit, canAudit } = useCredits(user?.id)
+  const { credits, loadCredits, canAudit } = useCredits(user?.id)
   const { submitFlag } = useDataFlags(user?.id)
   const { showToast } = useToast()
 
@@ -171,7 +171,7 @@ export default function ProspectPage() {
     try {
       const result: AuditResult = await generateAudit(prospect)
       await saveAudit(prospect.id, result)
-      await consumeAudit()
+      loadCredits()
       await logActivity(prospect.id, 'audit_generated')
       setProspect(prev => prev ? {
         ...prev,
@@ -182,16 +182,25 @@ export default function ProspectPage() {
       } : null)
       showToast('Audit generado con IA')
     } catch (err) {
-      setAuditError('No se pudo generar el audit. Comprueba que la Edge Function está desplegada.')
+      if (err instanceof Error && err.message === 'CREDITS_EXHAUSTED') {
+        setAuditError(`Has alcanzado el límite de ${credits?.audits_limit ?? ''} audits.`)
+      } else {
+        setAuditError('No se pudo generar el audit. Comprueba que la Edge Function está desplegada.')
+      }
       showToast('Error al generar el audit', 'error')
     } finally {
       setGeneratingAudit(false)
     }
   }
 
+  const resolvePitch = () => {
+    const name = user?.user_metadata?.display_name?.trim() || ''
+    return (prospect?.audit_pitch ?? '').replace(/\[nombre\]/gi, name || '[nombre]')
+  }
+
   const handleCopyPitch = async () => {
     if (!prospect?.audit_pitch) return
-    await navigator.clipboard.writeText(prospect.audit_pitch)
+    await navigator.clipboard.writeText(resolvePitch())
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
     showToast('Mensaje copiado al portapapeles')
@@ -200,7 +209,7 @@ export default function ProspectPage() {
   const handleGmailDraft = () => {
     if (!prospect?.audit_pitch) return
     const subject = encodeURIComponent(`Sobre la presencia digital de ${prospect.name}`)
-    const body = encodeURIComponent(prospect.audit_pitch)
+    const body = encodeURIComponent(resolvePitch())
     window.open(`https://mail.google.com/mail/?view=cm&su=${subject}&body=${body}`, '_blank')
   }
 
@@ -283,13 +292,16 @@ export default function ProspectPage() {
                 prospect.audit_score < 30 ? 'text-red-500' :
                 prospect.audit_score < 55 ? 'text-amber-600' : 'text-green-600'
               }`}>
-                {prospect.audit_score} pts
+                {prospect.audit_score} {prospect.audit_pitch ? 'pts IA' : 'pts'}
               </span>
             )}
           </div>
         </div>
-        <button onClick={() => setShowFlagModal(true)}
-          className="flex items-center gap-1.5 text-xs text-ink-faint hover:text-amber-600 transition-colors border border-black/10 rounded-full px-3 py-1.5 flex-shrink-0">
+        <button
+          onClick={() => setShowFlagModal(true)}
+          title="Reporta un dato incorrecto (dirección, teléfono, web…) para mejorar la calidad del lead"
+          className="flex items-center gap-1.5 text-xs text-ink-faint hover:text-amber-600 transition-colors border border-black/10 rounded-full px-3 py-1.5 flex-shrink-0"
+        >
           <Flag size={12} /> Marcar problema
         </button>
       </div>
@@ -377,7 +389,10 @@ export default function ProspectPage() {
               disabled={generatingAudit || !canAudit}
               className="flex items-center gap-1.5 text-xs bg-accent text-white px-3 py-1.5 rounded-full hover:bg-accent-dark transition-colors disabled:opacity-50"
             >
-              <Sparkles size={12} />
+              {generatingAudit
+                ? <Loader2 size={12} className="animate-spin" />
+                : <Sparkles size={12} />
+              }
               {generatingAudit ? 'Generando...' : prospect.audit_pitch ? 'Regenerar audit' : 'Generar audit con IA'}
             </button>
           </div>
@@ -417,6 +432,18 @@ export default function ProspectPage() {
               </button>
             )}
           </div>
+
+          {prospect.audit_pitch && /\[nombre\]/i.test(prospect.audit_pitch) && !user?.user_metadata?.display_name && (
+            <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2">
+              <AlertCircle size={13} className="flex-shrink-0" />
+              <span>
+                El mensaje contiene <strong>[nombre]</strong> sin rellenar.{' '}
+                <Link to="/app/settings" className="underline hover:no-underline">Añade tu nombre en Ajustes</Link>
+                {' '}para que se sustituya al copiar.
+              </span>
+            </div>
+          )}
+
           {prospect.audit_pitch ? (
             <div className="bg-surface rounded-xl p-4 text-sm text-ink leading-relaxed whitespace-pre-wrap border border-black/8">
               {prospect.audit_pitch}

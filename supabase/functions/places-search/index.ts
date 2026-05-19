@@ -1,81 +1,88 @@
 // Supabase Edge Function — Google Places (New) API
 // Deploy: supabase functions deploy places-search
-// Secrets: supabase secrets set GOOGLE_PLACES_KEY=<tu_api_key>
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const GOOGLE_PLACES_KEY = Deno.env.get('GOOGLE_PLACES_KEY') ?? ''
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const ALLOWED_ORIGIN = Deno.env.get('ALLOWED_ORIGIN') ?? '*'
 
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
+function json(body: object, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' },
+  })
+}
+
 serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: CORS_HEADERS })
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS })
+  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS })
+
+  // ── Autenticación ──────────────────────────────────────────────────────────
+  const authHeader = req.headers.get('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401)
+
+  const userClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+  const { data: { user }, error: authError } = await userClient.auth.getUser(
+    authHeader.replace('Bearer ', ''),
+  )
+  if (authError || !user) return json({ error: 'Unauthorized' }, 401)
+
+  // ── Validar input ──────────────────────────────────────────────────────────
+  const body = await req.json().catch(() => ({}))
+  const query = typeof body.query === 'string' ? body.query.trim().substring(0, 200) : ''
+  if (!query) return json({ error: 'Campo query requerido', results: [] }, 400)
+
+  // ── Verificar créditos (server-side) ───────────────────────────────────────
+  const { data: credits } = await userClient
+    .from('credits')
+    .select('searches_used, searches_limit')
+    .eq('user_id', user.id)
+    .single()
+
+  if (!credits) return json({ error: 'No se pudieron verificar los créditos' }, 500)
+  if (credits.searches_used >= credits.searches_limit) {
+    return json({ error: 'CREDITS_EXHAUSTED', limit: credits.searches_limit }, 402)
   }
 
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: CORS_HEADERS })
-  }
+  // ── Google Places API ──────────────────────────────────────────────────────
+  if (!GOOGLE_PLACES_KEY) return json({ error: 'GOOGLE_PLACES_KEY no configurada', results: [] }, 500)
 
-  const { query } = await req.json()
-
-  if (!query) {
-    return new Response(
-      JSON.stringify({ error: 'Campo query requerido', results: [] }),
-      { status: 400, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
-    )
-  }
-
-  if (!GOOGLE_PLACES_KEY) {
-    return new Response(
-      JSON.stringify({ error: 'GOOGLE_PLACES_KEY no configurada', results: [] }),
-      { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
-    )
-  }
-
-  // Google Places API (New) — Text Search
-  // Permite obtener website, phone, etc. en una sola llamada con FieldMask
   const placesRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Goog-Api-Key': GOOGLE_PLACES_KEY,
       'X-Goog-FieldMask': [
-        'places.id',
-        'places.displayName',
-        'places.formattedAddress',
-        'places.nationalPhoneNumber',
-        'places.websiteUri',
-        'places.rating',
-        'places.userRatingCount',
-        'places.types',
-        'places.googleMapsUri',
+        'places.id', 'places.displayName', 'places.formattedAddress',
+        'places.nationalPhoneNumber', 'places.websiteUri', 'places.rating',
+        'places.userRatingCount', 'places.types', 'places.googleMapsUri',
       ].join(','),
     },
-    body: JSON.stringify({
-      textQuery: query,
-      languageCode: 'es',
-      regionCode: 'ES',
-      maxResultCount: 20,
-    }),
+    body: JSON.stringify({ textQuery: query, languageCode: 'es', regionCode: 'ES', maxResultCount: 20 }),
   })
 
   if (!placesRes.ok) {
-    const errBody = await placesRes.text()
-    console.error('Google Places API error:', errBody)
-    return new Response(
-      JSON.stringify({ error: 'Error en Google Places API', results: [] }),
-      { status: 502, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
-    )
+    console.error('Google Places API error:', await placesRes.text())
+    return json({ error: 'Error en Google Places API', results: [] }, 502)
   }
 
   const data = await placesRes.json()
 
-  // Normalizar al formato que espera el frontend (PlaceResult)
+  // ── Consumir crédito (solo si la búsqueda fue exitosa) ─────────────────────
+  await userClient
+    .from('credits')
+    .update({ searches_used: credits.searches_used + 1 })
+    .eq('user_id', user.id)
+
   const results = (data.places ?? []).map((place: Record<string, unknown>) => ({
     place_id: place.id,
     name: (place.displayName as { text?: string })?.text ?? '',
@@ -88,8 +95,5 @@ serve(async (req: Request) => {
     url: place.googleMapsUri,
   }))
 
-  return new Response(
-    JSON.stringify({ results }),
-    { headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } },
-  )
+  return json({ results, searches_used: credits.searches_used + 1 })
 })

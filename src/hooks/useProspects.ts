@@ -38,13 +38,14 @@ export function useProspects(userId: string | undefined) {
 
     const webStatus = detectWebStatus(place)
     const auditScore = calculateAuditScore(place)
+    const normalizedCity = city.trim().replace(/\b\w/g, c => c.toUpperCase())
 
     const newProspect = {
       user_id: userId,
       place_id: place.place_id,
       name: place.name,
       address: place.formatted_address,
-      city,
+      city: normalizedCity,
       phone: place.formatted_phone_number,
       website: place.website,
       google_maps_url: place.url,
@@ -83,6 +84,25 @@ export function useProspects(userId: string | undefined) {
     })
 
     setProspects(prev => [data, ...prev])
+
+    // Lanzar comprobación real de web en background (solo si tiene URL y status inicial 'has_web')
+    if (data.web_status === 'has_web' && data.website) {
+      supabase.functions.invoke('check-web', { body: { url: data.website } })
+        .then(({ data: check }) => {
+          if (!check) return
+          const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+          if (check.web_status && check.web_status !== 'has_web') updates.web_status = check.web_status
+          if (check.pagespeed_score != null) updates.pagespeed_score = check.pagespeed_score
+          if (check.seo_score != null) updates.pagespeed_seo = check.seo_score
+          if (Object.keys(updates).length <= 1) return
+          supabase.from('prospects').update(updates).eq('id', data.id)
+          setProspects(prev =>
+            prev.map(p => p.id === data.id ? { ...p, ...updates } : p),
+          )
+        })
+        .catch(() => {})
+    }
+
     return data
   }, [userId])
 

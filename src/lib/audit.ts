@@ -34,12 +34,14 @@ export async function generateAudit(prospect: Prospect): Promise<AuditResult> {
       rating: prospect.rating,
       review_count: prospect.review_count,
       website: prospect.website,
+      pagespeed_score: prospect.pagespeed_score ?? null,
+      pagespeed_seo: prospect.pagespeed_seo ?? null,
     }),
   })
 
-  if (!response.ok) {
-    throw new Error(`Error generando audit: HTTP ${response.status}`)
-  }
+  if (response.status === 402) throw new Error('CREDITS_EXHAUSTED')
+  if (response.status === 401) throw new Error('UNAUTHORIZED')
+  if (!response.ok) throw new Error(`Error generando audit: HTTP ${response.status}`)
 
   const data = await response.json()
 

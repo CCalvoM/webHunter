@@ -3,6 +3,7 @@ import { Plus, Trash2, Edit2, Check, X } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useCredits } from '../hooks/useCredits'
 import { useTemplates } from '../hooks/useTemplates'
+import { supabase } from '../lib/supabase'
 import type { Template } from '../types'
 
 const SECTORS = [
@@ -118,6 +119,15 @@ export default function Settings() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<TemplateFormData>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [displayName, setDisplayName] = useState(user?.user_metadata?.display_name || '')
+  const [savingName, setSavingName] = useState(false)
+
+  const handleSaveName = async () => {
+    if (!displayName.trim()) return
+    setSavingName(true)
+    await supabase.auth.updateUser({ data: { display_name: displayName.trim() } })
+    setSavingName(false)
+  }
 
   useEffect(() => {
     loadCredits()
@@ -154,6 +164,25 @@ export default function Settings() {
           <div>
             <label className="text-xs text-ink-muted font-medium">Email</label>
             <div className="mt-1 text-sm text-ink">{user?.email}</div>
+          </div>
+          <div>
+            <label className="text-xs text-ink-muted font-medium">Tu nombre</label>
+            <p className="text-xs text-ink-faint mb-1 mt-0.5">Se usa para firmar los mensajes de venta generados con IA.</p>
+            <div className="flex gap-2">
+              <input
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                placeholder="Ej: Carlos"
+                className="input text-sm flex-1"
+              />
+              <button
+                onClick={handleSaveName}
+                disabled={savingName || !displayName.trim()}
+                className="btn-primary text-xs px-4"
+              >
+                {savingName ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
           </div>
           <div>
             <label className="text-xs text-ink-muted font-medium">Plan actual</label>

@@ -18,37 +18,6 @@ export function useCredits(userId: string | undefined) {
     setLoading(false)
   }, [userId])
 
-  const consumeSearch = useCallback(async (): Promise<boolean> => {
-    if (!credits || !userId) return false
-    if (credits.searches_used >= credits.searches_limit) return false
-
-    const { error } = await supabase
-      .from('credits')
-      .update({ searches_used: credits.searches_used + 1 })
-      .eq('user_id', userId)
-
-    if (!error) {
-      setCredits(prev => prev ? { ...prev, searches_used: prev.searches_used + 1 } : null)
-      return true
-    }
-    return false
-  }, [credits, userId])
-
-  const consumeAudit = useCallback(async (): Promise<boolean> => {
-    if (!credits || !userId) return false
-    if (credits.audits_used >= credits.audits_limit) return false
-
-    const { error } = await supabase
-      .from('credits')
-      .update({ audits_used: credits.audits_used + 1 })
-      .eq('user_id', userId)
-
-    if (!error) {
-      setCredits(prev => prev ? { ...prev, audits_used: prev.audits_used + 1 } : null)
-      return true
-    }
-    return false
-  }, [credits, userId])
 
   // Plan free: límite de por vida (sin reset mensual)
   // Plan pro: límite mensual con reset automático
@@ -57,5 +26,5 @@ export function useCredits(userId: string | undefined) {
 
   const isLifetime = credits?.plan === 'free'
 
-  return { credits, loading, loadCredits, consumeSearch, consumeAudit, canSearch, canAudit, isLifetime }
+  return { credits, loading, loadCredits, canSearch, canAudit, isLifetime }
 }

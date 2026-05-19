@@ -21,6 +21,8 @@ create table if not exists prospects (
   audit_score     integer,
   audit_summary   text,
   audit_pitch     text,
+  pagespeed_score integer,
+  pagespeed_seo   integer,
   stage           text check (stage in ('encontrado','contactado','respondio','demo','cerrado','descartado')) default 'encontrado',
   notes           text,
   followup_date   date,
@@ -86,8 +88,18 @@ create table if not exists pipeline_events (
   created_at   timestamptz default now()
 );
 
+-- RATE LIMITS — control de abuso en Edge Functions
+create table if not exists rate_limits (
+  id         uuid default gen_random_uuid() primary key,
+  user_id    uuid references auth.users(id) on delete cascade not null,
+  fn         text not null,
+  created_at timestamptz default now()
+);
+create index if not exists rate_limits_lookup on rate_limits (user_id, fn, created_at);
+
 -- ─── RLS (Row Level Security) ─────────────────────────────────
 alter table prospects       enable row level security;
+alter table rate_limits     enable row level security;
 alter table activities      enable row level security;
 alter table templates       enable row level security;
 alter table credits         enable row level security;
@@ -97,7 +109,7 @@ alter table pipeline_events enable row level security;
 create policy "prospects_own"       on prospects       using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "activities_own"      on activities      using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "templates_own"       on templates       using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "credits_own"         on credits         using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "credits_select"      on credits         for select using (auth.uid() = user_id);
 create policy "data_flags_own"      on data_flags      using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "pipeline_events_own" on pipeline_events using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
@@ -133,6 +145,13 @@ create trigger prospects_updated_at
 
 -- ─────────────────────────────────────────────────────────────
 -- MIGRACIÓN (si ya tienes la tabla prospects creada):
+-- ALTER TABLE prospects ADD COLUMN IF NOT EXISTS pagespeed_score integer;
+-- ALTER TABLE prospects ADD COLUMN IF NOT EXISTS pagespeed_seo   integer;
+--
+-- Migrar RLS de credits (elimina UPDATE directo desde cliente):
+-- DROP POLICY IF EXISTS "credits_own" ON credits;
+-- CREATE POLICY "credits_select" ON credits FOR SELECT USING (auth.uid() = user_id);
+--
 -- ALTER TABLE prospects DROP CONSTRAINT IF EXISTS prospects_web_status_check;
 -- ALTER TABLE prospects ADD CONSTRAINT prospects_web_status_check
 --   CHECK (web_status IN ('no_web','fake_web','broken_web','poor_web','has_web'));

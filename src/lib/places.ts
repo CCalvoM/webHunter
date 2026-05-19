@@ -1,31 +1,28 @@
 import type { PlaceResult, WebStatus } from '../types'
+import { supabase } from './supabase'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
-const GOOGLE_KEY = import.meta.env.VITE_GOOGLE_PLACES_KEY
 
 // ─── Buscar negocios via Edge Function (fallback a mock en dev) ───────────────
 export async function searchPlaces(city: string, sector: string): Promise<PlaceResult[]> {
-  try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/places-search`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query: `${sector} en ${city} España` }),
-    })
+  const { data: { session } } = await supabase.auth.getSession()
 
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/places-search`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${session?.access_token ?? SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query: `${sector} en ${city} España` }),
+  })
 
-    const data = await response.json()
-    if (data.results?.length) return data.results as PlaceResult[]
+  if (response.status === 402) throw new Error('CREDITS_EXHAUSTED')
+  if (response.status === 401) throw new Error('UNAUTHORIZED')
+  if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
-    return generateMockResults(city, sector)
-  } catch {
-    console.warn('[Cloza] Edge Function no disponible — usando datos de prueba')
-    return generateMockResults(city, sector)
-  }
+  const data = await response.json()
+  return (data.results?.length ? data.results : generateMockResults(city, sector)) as PlaceResult[]
 }
 
 // ─── Mock para desarrollo ─────────────────────────────────────────────────────
@@ -83,37 +80,6 @@ export function detectWebStatus(place: PlaceResult): WebStatus {
   return 'has_web'
 }
 
-// ─── PageSpeed Insights — detectar webs rotas o lentas ───────────────────────
-export async function checkWebHealth(websiteUrl: string): Promise<WebStatus> {
-  try {
-    const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(websiteUrl)}&strategy=mobile&key=${GOOGLE_KEY}`
-    const res = await fetch(apiUrl)
-    if (!res.ok) return 'broken_web'
-
-    const data = await res.json()
-    const score: number = (data.lighthouseResult?.categories?.performance?.score ?? 0) * 100
-
-    if (score < 30) return 'broken_web'
-    if (score < 60) return 'poor_web'
-    return 'has_web'
-  } catch {
-    return 'broken_web'
-  }
-}
-
-// ─── Enriquecer resultados con PageSpeed en background ───────────────────────
-export async function enrichWithHealth(
-  results: PlaceResult[],
-  onUpdate: (placeId: string, status: WebStatus) => void,
-): Promise<void> {
-  const candidates = results.filter(r => detectWebStatus(r) === 'has_web' && r.website)
-  await Promise.allSettled(
-    candidates.map(async place => {
-      const enriched = await checkWebHealth(place.website!)
-      if (enriched !== 'has_web') onUpdate(place.place_id, enriched)
-    }),
-  )
-}
 
 // ─── Calcular score de presencia digital ─────────────────────────────────────
 export function calculateAuditScore(place: PlaceResult, webStatus?: WebStatus): number {
