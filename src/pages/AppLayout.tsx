@@ -4,6 +4,7 @@ import { Search, Kanban, BarChart2, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useCredits } from '../hooks/useCredits'
 import OnboardingModal, { needsOnboarding } from '../components/OnboardingModal'
+import FeedbackButton from '../components/FeedbackButton'
 import clsx from 'clsx'
 
 const NAV_ITEMS = [
@@ -96,6 +97,8 @@ export default function AppLayout() {
       {showOnboarding && (
         <OnboardingModal onClose={() => setShowOnboarding(false)} />
       )}
+
+      <FeedbackButton />
 
     </div>
   )
