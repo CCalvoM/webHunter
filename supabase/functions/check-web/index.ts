@@ -67,12 +67,17 @@ serve(async (req: Request) => {
 
   if ((count ?? 0) >= 20) return json({ error: 'RATE_LIMITED' }, 429)
 
-  // Registrar llamada y limpiar entradas antiguas en paralelo
+  // Registrar llamada y limpiar entradas antiguas
+  // 1% de los requests hace limpieza global para evitar crecimiento indefinido de la tabla
+  const globalCleanup = Math.random() < 0.01
+    ? client.from('rate_limits').delete().lt('created_at', oneHourAgo)
+    : client.from('rate_limits').delete()
+        .eq('user_id', user.id).eq('fn', 'check-web')
+        .lt('created_at', oneHourAgo)
+
   await Promise.all([
     client.from('rate_limits').insert({ user_id: user.id, fn: 'check-web' }),
-    client.from('rate_limits').delete()
-      .eq('user_id', user.id).eq('fn', 'check-web')
-      .lt('created_at', oneHourAgo),
+    globalCleanup,
   ])
 
   // ── Validar URL (SSRF protection) ──────────────────────────────────────────

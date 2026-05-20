@@ -16,6 +16,7 @@ export function useProspects(userId: string | undefined) {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
+      .limit(500)
 
     if (error) setError(error.message)
     else setProspects(data || [])
