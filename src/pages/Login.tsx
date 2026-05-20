@@ -1,8 +1,20 @@
+import { useState } from 'react'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { supabase } from '../lib/supabase'
 
 export default function Login() {
+  const [resendEmail, setResendEmail] = useState('')
+  const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
+  const [showResend, setShowResend] = useState(false)
+
+  const handleResend = async () => {
+    if (!resendEmail.trim()) return
+    setResendState('sending')
+    const { error } = await supabase.auth.resend({ type: 'signup', email: resendEmail.trim() })
+    setResendState(error ? 'error' : 'sent')
+  }
+
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -76,6 +88,46 @@ export default function Login() {
             }}
             redirectTo={`${window.location.origin}/app`}
           />
+        </div>
+
+        {/* Reenvío de confirmación */}
+        <div className="mt-3 text-center">
+          {!showResend ? (
+            <button
+              onClick={() => setShowResend(true)}
+              className="text-xs text-ink-faint hover:text-ink-muted transition-colors"
+            >
+              ¿No recibiste el email de confirmación?
+            </button>
+          ) : (
+            <div className="card shadow-sm mt-2 text-left">
+              <p className="text-xs text-ink-muted mb-3 font-medium">Reenviar email de confirmación</p>
+              {resendState === 'sent' ? (
+                <p className="text-xs text-green-600 text-center py-2">Email enviado — revisa tu bandeja de entrada.</p>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={resendEmail}
+                    onChange={e => setResendEmail(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleResend()}
+                    placeholder="tu@email.com"
+                    className="input text-sm flex-1"
+                  />
+                  <button
+                    onClick={handleResend}
+                    disabled={resendState === 'sending' || !resendEmail.trim()}
+                    className="btn-primary text-xs px-4 whitespace-nowrap"
+                  >
+                    {resendState === 'sending' ? 'Enviando...' : 'Reenviar'}
+                  </button>
+                </div>
+              )}
+              {resendState === 'error' && (
+                <p className="text-xs text-red-500 mt-2">No se pudo enviar. Comprueba el email.</p>
+              )}
+            </div>
+          )}
         </div>
 
         <p className="text-center text-xs text-ink-faint mt-4">
