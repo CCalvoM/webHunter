@@ -204,7 +204,7 @@ INSTRUCCIONES — genera cada sección con estas prioridades:
    - APERTURA: Reconocimiento genuino de algo específico del negocio + contexto natural de por qué escribes (buscaste ese sector en esa ciudad)
    - CUERPO (2-3 frases): La situación sin juicio + la oportunidad concreta con los datos reales del análisis + quién se lleva esa oportunidad ahora en ${city}
    - CIERRE: Una sola pregunta suave que despierta curiosidad y le da el control, sin presión ni compromiso
-   - FIRMA: [nombre]
+   - FIRMA OBLIGATORIA: el mensaje SIEMPRE debe terminar con una línea en blanco seguida del literal exacto "[nombre]" en su propia línea. Sin excepciones. Ejemplo: "\n\n[nombre]"
    - Tono: como un conocido del sector que comparte algo que le pareció relevante, no un vendedor. Sin exclamaciones. Sin "potenciar", "impulsar", "sinergias", "soluciones digitales". Sin hablar de ti en más de una frase.
 
 Responde ÚNICAMENTE con este JSON exacto, sin texto adicional:
