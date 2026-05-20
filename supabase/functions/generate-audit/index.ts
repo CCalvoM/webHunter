@@ -190,12 +190,22 @@ INSTRUCCIONES — genera cada sección con estas prioridades:
    - Ejemplo correcto: "~18-30 clientes nuevos al mes que buscan ${sector} en ${city} y no te encuentran"
    - Evita números exagerados que resten credibilidad
 
-4. PITCH (máximo 160 palabras): Escribe el mensaje más efectivo posible siguiendo esta estructura:
-   - LÍNEA 1: Gancho directo. Menciona el nombre del negocio y algo específico que crea curiosidad o urgencia inmediata. Sin presentaciones largas.
-   - CUERPO (2-3 frases): El problema concreto con datos reales del análisis. Qué está pasando ahora mismo con sus competidores en ${city}. Qué está perdiendo en euros o clientes.
-   - CIERRE: Una sola propuesta de acción clara y sin presión — "si te parece, te mando un análisis de 5 minutos" o "¿15 minutos esta semana para enseñarte qué están haciendo tus competidores?".
+4. PITCH (máximo 160 palabras): Escribe aplicando los principios de Dale Carnegie de "Cómo ganar amigos e influir en las personas". Este mensaje lo enviará un freelancer directamente al dueño del negocio.
+
+   PRINCIPIOS CARNEGIE A APLICAR:
+   - Habla siempre en términos de lo que le interesa AL RECEPTOR, nunca de lo que ofreces tú
+   - Empieza con reconocimiento genuino y específico de algo positivo del negocio (sus reseñas, algo de su sector, su presencia — nunca adulación vacía)
+   - Despierta un DESEO, no un miedo: "hay clientes buscándote ahora" en vez de "estás perdiendo clientes"
+   - Nunca critiques ni condenes — presenta la situación como una oportunidad que todavía está disponible, no como un fallo suyo
+   - Que el siguiente paso parezca una IDEA SUYA: la pregunta final le da control total ("¿os interesaría saber...?" no "te preparo yo un análisis")
+   - Muestra que conoces SU negocio, SU ciudad, SUS clientes — no hables de ti mismo
+
+   ESTRUCTURA:
+   - APERTURA: Reconocimiento genuino de algo específico del negocio + contexto natural de por qué escribes (buscaste ese sector en esa ciudad)
+   - CUERPO (2-3 frases): La situación sin juicio + la oportunidad concreta con los datos reales del análisis + quién se lleva esa oportunidad ahora en ${city}
+   - CIERRE: Una sola pregunta suave que despierta curiosidad y le da el control, sin presión ni compromiso
    - FIRMA: [nombre]
-   - Tono: directo, cercano, sin jerga técnica. Como un conocido que sabe del tema y quiere ayudar, no como un vendedor. Sin exclamaciones exageradas. Sin palabras como "potenciar", "impulsar", "sinergias".
+   - Tono: como un conocido del sector que comparte algo que le pareció relevante, no un vendedor. Sin exclamaciones. Sin "potenciar", "impulsar", "sinergias", "soluciones digitales". Sin hablar de ti en más de una frase.
 
 Responde ÚNICAMENTE con este JSON exacto, sin texto adicional:
 {
