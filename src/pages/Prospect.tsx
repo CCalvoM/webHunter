@@ -446,7 +446,7 @@ export default function ProspectPage() {
 
           {prospect.audit_pitch ? (
             <div className="bg-surface rounded-xl p-4 text-sm text-ink leading-relaxed whitespace-pre-wrap border border-black/8">
-              {prospect.audit_pitch}
+              {resolvePitch()}
             </div>
           ) : (
             <div className="bg-surface rounded-xl p-4 text-sm text-ink-faint text-center border border-dashed border-black/10">
