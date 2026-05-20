@@ -1,12 +1,21 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Auth } from '@supabase/auth-ui-react'
 import { ThemeSupa } from '@supabase/auth-ui-shared'
 import { supabase } from '../lib/supabase'
 
 export default function Login() {
+  const navigate = useNavigate()
   const [resendEmail, setResendEmail] = useState('')
   const [resendState, setResendState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [showResend, setShowResend] = useState(false)
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) navigate('/app', { replace: true })
+    })
+    return () => subscription.unsubscribe()
+  }, [navigate])
 
   const handleResend = async () => {
     if (!resendEmail.trim()) return
