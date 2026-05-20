@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   ArrowLeft, Copy, Check, Sparkles, Calendar, FileText,
-  Trash2, ExternalLink, Phone, Globe, AlertCircle, Flag, MapPin, Loader2,
+  Trash2, ExternalLink, Phone, Globe, AlertCircle, Flag, MapPin, Loader2, MessageCircle,
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useProspects } from '../hooks/useProspects'
@@ -13,6 +13,21 @@ import { useToast } from '../contexts/ToastContext'
 import { generateAudit } from '../lib/audit'
 import { getAuditIssues } from '../lib/places'
 import type { AuditResult, FlagType, PipelineStage, Prospect } from '../types'
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function normalizePhone(raw: string): string {
+  return raw.replace(/[\s\-().+]/g, '').replace(/^0034/, '').replace(/^34(?=\d{9}$)/, '')
+}
+
+function isMobile(raw: string): boolean {
+  const n = normalizePhone(raw)
+  return /^[67]/.test(n) && n.length === 9
+}
+
+function whatsappUrl(raw: string, text: string): string {
+  const n = normalizePhone(raw)
+  return `https://wa.me/34${n}?text=${encodeURIComponent(text)}`
+}
 
 // ─── Constantes de UI ─────────────────────────────────────────────────────────
 const WEB_STATUS_LABELS: Record<string, string> = {
@@ -469,6 +484,24 @@ export default function ProspectPage() {
               className="flex items-center gap-1.5 text-sm bg-red-50 text-red-600 border border-red-100 px-4 py-2 rounded-full hover:bg-red-100 transition-colors">
               <ExternalLink size={14} /> Crear borrador en Gmail
             </button>
+            {prospect.phone && isMobile(prospect.phone) && (
+              <a
+                href={whatsappUrl(prospect.phone, resolvePitch())}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-sm bg-green-50 text-green-700 border border-green-200 px-4 py-2 rounded-full hover:bg-green-100 transition-colors"
+              >
+                <MessageCircle size={14} /> Enviar por WhatsApp
+              </a>
+            )}
+            {prospect.phone && !isMobile(prospect.phone) && (
+              <a
+                href={`tel:${prospect.phone}`}
+                className="flex items-center gap-1.5 text-sm bg-blue-50 text-blue-700 border border-blue-200 px-4 py-2 rounded-full hover:bg-blue-100 transition-colors"
+              >
+                <Phone size={14} /> Llamar ({prospect.phone})
+              </a>
+            )}
           </div>
         </div>
       )}
