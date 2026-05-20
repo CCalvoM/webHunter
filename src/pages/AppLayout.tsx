@@ -1,8 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Search, Kanban, BarChart2, Settings, LogOut } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useCredits } from '../hooks/useCredits'
+import OnboardingModal, { needsOnboarding } from '../components/OnboardingModal'
 import clsx from 'clsx'
 
 const NAV_ITEMS = [
@@ -16,6 +17,7 @@ export default function AppLayout() {
   const { user, signOut } = useAuth()
   const { credits, loadCredits } = useCredits(user?.id)
   const navigate = useNavigate()
+  const [showOnboarding, setShowOnboarding] = useState(needsOnboarding)
 
   useEffect(() => { loadCredits() }, [loadCredits])
 
@@ -90,6 +92,10 @@ export default function AppLayout() {
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
+
+      {showOnboarding && (
+        <OnboardingModal onClose={() => setShowOnboarding(false)} />
+      )}
 
     </div>
   )
