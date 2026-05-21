@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Edit2, Check, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Plus, Trash2, Edit2, Check, X, LogOut } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useCredits } from '../hooks/useCredits'
 import { useTemplates } from '../hooks/useTemplates'
@@ -112,7 +113,8 @@ function TemplateRow({
 }
 
 export default function Settings() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
+  const navigate = useNavigate()
   const { credits, loadCredits } = useCredits(user?.id)
   const { templates, loading: loadingTemplates, loadTemplates, createTemplate, updateTemplate, deleteTemplate } = useTemplates(user?.id)
 
@@ -341,6 +343,17 @@ export default function Settings() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Cerrar sesión — solo visible en móvil (en desktop está en el sidebar) */}
+      <div className="md:hidden card mb-4">
+        <button
+          onClick={async () => { await signOut(); navigate('/login') }}
+          className="w-full flex items-center justify-center gap-2 py-2 text-sm text-red-500 hover:text-red-600 font-medium transition-colors"
+        >
+          <LogOut size={15} />
+          Cerrar sesión
+        </button>
       </div>
 
       {/* Próximamente */}
