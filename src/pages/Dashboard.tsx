@@ -56,7 +56,7 @@ export default function Dashboard() {
   })
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-4 md:p-6 max-w-5xl mx-auto">
 
       {/* Header */}
       <div className="mb-8">
@@ -160,8 +160,8 @@ export default function Dashboard() {
                 <thead>
                   <tr className="border-b border-black/5">
                     <th className="text-left text-xs text-ink-muted font-medium px-4 py-3">Negocio</th>
-                    <th className="text-left text-xs text-ink-muted font-medium px-4 py-3">Ciudad</th>
-                    <th className="text-left text-xs text-ink-muted font-medium px-4 py-3">Estado</th>
+                    <th className="text-left text-xs text-ink-muted font-medium px-4 py-3 hidden sm:table-cell">Ciudad</th>
+                    <th className="text-left text-xs text-ink-muted font-medium px-4 py-3 hidden sm:table-cell">Estado</th>
                     <th className="text-left text-xs text-ink-muted font-medium px-4 py-3">Etapa</th>
                   </tr>
                 </thead>
@@ -175,8 +175,8 @@ export default function Dashboard() {
                         <div className="font-medium text-sm text-ink">{p.name}</div>
                         <div className="text-xs text-ink-faint">{p.category}</div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-ink-muted">{p.city}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-sm text-ink-muted hidden sm:table-cell">{p.city}</td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${WEB_STATUS_COLORS[p.web_status]}`}>
                           {WEB_STATUS_LABELS[p.web_status]}
                         </span>

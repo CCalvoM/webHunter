@@ -8,10 +8,10 @@ import FeedbackButton from '../components/FeedbackButton'
 import clsx from 'clsx'
 
 const NAV_ITEMS = [
-  { to: '/app',            label: 'Dashboard',      icon: BarChart2, end: true },
-  { to: '/app/discovery',  label: 'Buscar negocios', icon: Search,    end: false },
-  { to: '/app/pipeline',   label: 'Pipeline',        icon: Kanban,    end: false },
-  { to: '/app/settings',   label: 'Ajustes',         icon: Settings,  end: false },
+  { to: '/app',            label: 'Dashboard',       mobileLabel: 'Inicio',   icon: BarChart2, end: true },
+  { to: '/app/discovery',  label: 'Buscar negocios', mobileLabel: 'Buscar',   icon: Search,    end: false },
+  { to: '/app/pipeline',   label: 'Pipeline',        mobileLabel: 'Pipeline', icon: Kanban,    end: false },
+  { to: '/app/settings',   label: 'Ajustes',         mobileLabel: 'Ajustes',  icon: Settings,  end: false },
 ]
 
 export default function AppLayout() {
@@ -32,7 +32,7 @@ export default function AppLayout() {
     <div className="flex h-screen bg-surface overflow-hidden">
 
       {/* Sidebar */}
-      <aside className="w-56 flex-shrink-0 bg-white border-r border-black/8 flex flex-col">
+      <aside className="hidden md:flex w-56 flex-shrink-0 bg-white border-r border-black/8 flex-col">
 
         {/* Logo */}
         <div className="px-4 h-14 flex items-center gap-2.5 border-b border-black/8">
@@ -90,7 +90,7 @@ export default function AppLayout() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto pb-16 md:pb-0">
         <Outlet />
       </main>
 
@@ -99,6 +99,26 @@ export default function AppLayout() {
       )}
 
       <FeedbackButton />
+
+      {/* Mobile bottom nav */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-black/8">
+        <div className="flex">
+          {NAV_ITEMS.map(({ to, mobileLabel, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) => clsx(
+                'flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 text-[10px] font-medium transition-colors',
+                isActive ? 'text-accent' : 'text-ink-muted',
+              )}
+            >
+              <Icon size={20} />
+              <span>{mobileLabel}</span>
+            </NavLink>
+          ))}
+        </div>
+      </nav>
 
     </div>
   )

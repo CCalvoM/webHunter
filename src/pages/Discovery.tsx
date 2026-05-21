@@ -92,10 +92,10 @@ export default function Discovery() {
   const fakeWebCount = results.filter(r => detectWebStatus(r) === 'fake_web').length
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto">
 
       {/* Header */}
-      <div className="mb-6 flex items-start justify-between">
+      <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-display font-bold text-2xl text-ink">Buscar negocios</h1>
           <p className="text-ink-muted text-sm mt-1">Encuentra negocios locales sin presencia digital en tu ciudad.</p>
@@ -103,7 +103,7 @@ export default function Discovery() {
 
         {/* Credits badge */}
         {credits && (
-          <div className="flex items-center gap-1.5 text-xs text-ink-muted bg-white border border-black/10 rounded-full px-3 py-1.5">
+          <div className="flex items-center gap-1.5 text-xs text-ink-muted bg-white border border-black/10 rounded-full px-3 py-1.5 flex-shrink-0">
             <Zap size={12} className={canSearch ? 'text-accent' : 'text-red-400'} />
             <span>
               {credits.searches_used}/{credits.searches_limit} búsquedas
@@ -144,7 +144,7 @@ export default function Discovery() {
           <button
             onClick={handleSearch}
             disabled={!city || !sector || searching || (!!credits && !canSearch)}
-            className="btn-primary flex items-center gap-2 px-6"
+            className="btn-primary flex items-center gap-2 px-6 w-full sm:w-auto justify-center"
           >
             <Search size={15} />
             {searching ? 'Buscando...' : 'Buscar'}
@@ -176,7 +176,7 @@ export default function Discovery() {
                 </span>
               )}
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap justify-end">
               {(['all', 'no_web', 'fake_web', 'broken_web', 'poor_web'] as const).map(status => (
                 <button
                   key={status}
@@ -200,12 +200,41 @@ export default function Discovery() {
               const score = calculateAuditScore(place)
               const isAdded = added.has(place.place_id) || existingPlaceIds.has(place.place_id)
 
+              const actionButtons = (
+                <>
+                  {place.url && (
+                    <a
+                      href={place.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-ghost p-2"
+                      title="Ver en Google Maps"
+                    >
+                      <ExternalLink size={14} />
+                    </a>
+                  )}
+                  <button
+                    onClick={() => handleAdd(place)}
+                    disabled={isAdded}
+                    className={isAdded
+                      ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-brand-green-light text-brand-green cursor-default'
+                      : 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-accent text-white hover:bg-accent-dark transition-colors'
+                    }
+                  >
+                    {isAdded
+                      ? <><span>✓</span> Añadido</>
+                      : <><Plus size={12} /> Añadir al pipeline</>
+                    }
+                  </button>
+                </>
+              )
+
               return (
                 <div key={place.place_id} className="card hover:border-black/20 transition-all">
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3">
 
                     {/* Score estimado */}
-                    <div className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center flex-shrink-0 flex-shrink-0 ${
+                    <div className={`w-11 h-11 rounded-xl flex flex-col items-center justify-center flex-shrink-0 ${
                       score < 30 ? 'bg-red-50 text-red-600' :
                       score < 55 ? 'bg-amber-50 text-amber-700' :
                       'bg-green-50 text-green-600'
@@ -251,34 +280,16 @@ export default function Discovery() {
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {place.url && (
-                        <a
-                          href={place.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn-ghost p-2"
-                          title="Ver en Google Maps"
-                        >
-                          <ExternalLink size={14} />
-                        </a>
-                      )}
-                      <button
-                        onClick={() => handleAdd(place)}
-                        disabled={isAdded}
-                        className={isAdded
-                          ? 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-brand-green-light text-brand-green cursor-default'
-                          : 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-accent text-white hover:bg-accent-dark transition-colors'
-                        }
-                      >
-                        {isAdded
-                          ? <><span>✓</span> Añadido</>
-                          : <><Plus size={12} /> Añadir al pipeline</>
-                        }
-                      </button>
+                    {/* Desktop actions */}
+                    <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                      {actionButtons}
                     </div>
 
+                  </div>
+
+                  {/* Mobile actions */}
+                  <div className="flex sm:hidden items-center justify-end gap-2 mt-3 pt-2.5 border-t border-black/6">
+                    {actionButtons}
                   </div>
                 </div>
               )

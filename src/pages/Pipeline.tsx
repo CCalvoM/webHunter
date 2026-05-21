@@ -88,7 +88,7 @@ export default function Pipeline() {
 
   if (loading) {
     return (
-      <div className="p-6 flex flex-col h-full">
+      <div className="p-4 md:p-6 md:flex md:flex-col md:h-full">
         <div className="mb-6">
           <div className="h-7 bg-black/6 rounded-lg w-32 mb-2 animate-pulse" />
           <div className="h-4 bg-black/4 rounded w-48 animate-pulse" />
@@ -108,7 +108,7 @@ export default function Pipeline() {
   const activeProspects = prospects.filter(p => p.stage !== 'descartado')
 
   return (
-    <div className="p-4 md:p-6 h-full flex flex-col">
+    <div className="p-4 md:p-6 md:h-full md:flex md:flex-col">
 
       <div className="mb-4 md:mb-6">
         <h1 className="font-display font-bold text-2xl text-ink">Pipeline</h1>

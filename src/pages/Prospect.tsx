@@ -281,7 +281,7 @@ export default function ProspectPage() {
       )
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
 
       {/* Back */}
       <button onClick={() => navigate(-1)}
@@ -290,8 +290,8 @@ export default function ProspectPage() {
       </button>
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div>
+      <div className="flex items-start gap-3 mb-6 flex-wrap">
+        <div className="flex-1 min-w-0">
           <h1 className="font-display font-bold text-2xl text-ink">{prospect.name}</h1>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             <span className="flex items-center gap-1 text-sm text-ink-muted">
@@ -391,9 +391,9 @@ export default function ProspectPage() {
 
       {/* Audit panel */}
       <div className="card mb-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-start justify-between mb-4 gap-3 flex-wrap">
           <h2 className="font-display font-bold text-sm text-ink">Audit de presencia digital</h2>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {credits && (
               <span className="text-xs text-ink-faint">
                 {credits.audits_used}/{credits.audits_limit} audits usados

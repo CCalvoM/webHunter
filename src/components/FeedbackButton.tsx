@@ -42,7 +42,7 @@ export default function FeedbackButton() {
       <button
         onClick={() => setOpen(true)}
         title="Enviar feedback"
-        className="fixed bottom-6 right-6 z-40 w-11 h-11 bg-white border border-black/10 rounded-full shadow-md flex items-center justify-center text-ink-muted hover:text-accent hover:border-accent/30 hover:shadow-lg transition-all"
+        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-40 w-11 h-11 bg-white border border-black/10 rounded-full shadow-md flex items-center justify-center text-ink-muted hover:text-accent hover:border-accent/30 hover:shadow-lg transition-all"
       >
         <MessageSquarePlus size={18} />
       </button>
