@@ -51,7 +51,7 @@ function TemplateRow({
   if (editing) {
     return (
       <div className="border border-accent/30 rounded-xl p-4 space-y-3 bg-accent-light/30">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-ink-muted font-medium mb-1 block">Nombre</label>
             <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -151,7 +151,7 @@ export default function Settings() {
     : 0
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto">
       <div className="mb-6">
         <h1 className="font-display font-bold text-2xl text-ink">Ajustes</h1>
         <p className="text-ink-muted text-sm mt-1">Configura tu cuenta y plantillas de outreach.</p>
@@ -262,7 +262,7 @@ export default function Settings() {
         {showForm && (
           <div className="border border-accent/30 rounded-xl p-4 mb-4 space-y-3 bg-accent-light/30">
             <p className="text-xs font-medium text-ink-muted">Nueva plantilla</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-ink-muted font-medium mb-1 block">Nombre</label>
                 <input
