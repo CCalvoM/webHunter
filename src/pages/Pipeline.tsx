@@ -7,6 +7,23 @@ import { useProspects } from '../hooks/useProspects'
 import { useToast } from '../contexts/ToastContext'
 import type { PipelineStage, Prospect } from '../types'
 
+const FOLLOW_UP_DAYS: Partial<Record<PipelineStage, number>> = {
+  contactado: 2,
+  respondio: 3,
+  demo: 5,
+}
+
+function daysSince(dateStr: string): number {
+  return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000)
+}
+
+function isFollowUpDue(p: Prospect): boolean {
+  const days = FOLLOW_UP_DAYS[p.stage]
+  if (!days || p.follow_up_dismissed_at) return false
+  const ref = p.stage_updated_at ?? p.updated_at
+  return daysSince(ref) >= days
+}
+
 const COLUMNS: { id: PipelineStage; label: string; color: string; dot: string }[] = [
   { id: 'encontrado', label: 'Encontrado',  color: 'bg-gray-50',   dot: 'bg-gray-400' },
   { id: 'contactado', label: 'Contactado',  color: 'bg-blue-50',   dot: 'bg-blue-400' },
@@ -28,7 +45,20 @@ const WEB_STATUS_LABELS: Record<string, string> = {
   broken_web: 'Web rota', poor_web: 'Web pobre', has_web: 'Con web',
 }
 
-function ProspectCard({ prospect, onClick }: { prospect: Prospect; onClick: () => void }) {
+function ProspectCard({
+  prospect,
+  onClick,
+  onDismissFollowUp,
+}: {
+  prospect: Prospect
+  onClick: () => void
+  onDismissFollowUp: (id: string) => void
+}) {
+  const followUpDue = isFollowUpDue(prospect)
+  const followUpDays = followUpDue
+    ? daysSince(prospect.stage_updated_at ?? prospect.updated_at)
+    : 0
+
   return (
     <div
       onClick={onClick}
@@ -57,13 +87,26 @@ function ProspectCard({ prospect, onClick }: { prospect: Prospect; onClick: () =
       {prospect.audit_pitch && (
         <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-brand-green inline-block" title="Audit generado" />
       )}
+      {followUpDue && (
+        <div className="mt-2 pt-2 border-t border-orange-100 flex items-center justify-between gap-2">
+          <span className="text-xs text-orange-500 leading-tight">
+            🟠 Seguimiento pendiente · hace {followUpDays} día{followUpDays === 1 ? '' : 's'}
+          </span>
+          <button
+            onClick={e => { e.stopPropagation(); onDismissFollowUp(prospect.id) }}
+            className="text-xs text-ink-faint hover:text-ink transition-colors flex-shrink-0"
+          >
+            Descartar
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
 export default function Pipeline() {
   const { user } = useAuth()
-  const { prospects, loadProspects, updateStage, loading } = useProspects(user?.id)
+  const { prospects, loadProspects, updateStage, dismissFollowUp, loading } = useProspects(user?.id)
   const navigate = useNavigate()
   const { showToast } = useToast()
 
@@ -155,6 +198,7 @@ export default function Pipeline() {
               key={prospect.id}
               prospect={prospect}
               onClick={() => navigate(`/app/prospect/${prospect.id}`)}
+              onDismissFollowUp={dismissFollowUp}
             />
           ))}
           {getByStage(mobileStage).length === 0 && (
@@ -202,6 +246,7 @@ export default function Pipeline() {
                                 <ProspectCard
                                   prospect={prospect}
                                   onClick={() => navigate(`/app/prospect/${prospect.id}`)}
+                                  onDismissFollowUp={dismissFollowUp}
                                 />
                               </div>
                             )}

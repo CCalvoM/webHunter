@@ -31,6 +31,9 @@ export interface Prospect {
   stage: PipelineStage
   notes?: string
   followup_date?: string
+  stage_updated_at?: string
+  follow_up_sent_at?: string | null
+  follow_up_dismissed_at?: string | null
   created_at: string
   updated_at: string
 }

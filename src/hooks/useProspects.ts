@@ -176,6 +176,19 @@ export function useProspects(userId: string | undefined) {
     }
   }, [])
 
+  const dismissFollowUp = useCallback(async (prospectId: string) => {
+    const now = new Date().toISOString()
+    const { error } = await supabase
+      .from('prospects')
+      .update({ follow_up_dismissed_at: now })
+      .eq('id', prospectId)
+    if (!error) {
+      setProspects(prev => prev.map(p =>
+        p.id === prospectId ? { ...p, follow_up_dismissed_at: now } : p,
+      ))
+    }
+  }, [])
+
   return {
     prospects,
     loading,
@@ -187,5 +200,6 @@ export function useProspects(userId: string | undefined) {
     saveAudit,
     updateProspect,
     deleteProspect,
+    dismissFollowUp,
   }
 }
