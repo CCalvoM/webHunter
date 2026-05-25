@@ -206,7 +206,7 @@ export default function ProspectPage() {
   const handleGenerateAudit = async () => {
     if (!prospect) return
     if (!canAudit) {
-      setAuditError(`Has alcanzado el límite de ${credits?.audits_limit} audits este mes.`)
+      setAuditError(`Has alcanzado el límite de ${credits?.audits_limit} audits de hoy. Vuelve mañana.`)
       return
     }
     setGeneratingAudit(true)

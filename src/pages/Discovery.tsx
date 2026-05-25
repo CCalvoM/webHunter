@@ -56,7 +56,7 @@ export default function Discovery() {
     setSearchError('')
 
     if (credits && !canSearch) {
-      setSearchError(`Has alcanzado el límite de ${credits.searches_limit} búsquedas este mes.`)
+      setSearchError(`Has alcanzado el límite de ${credits.searches_limit} búsquedas de hoy. Vuelve mañana.`)
       return
     }
 

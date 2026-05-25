@@ -203,7 +203,7 @@ export default function Settings() {
           {credits && (
             <div className="pt-2 border-t border-black/6">
               <label className="text-xs text-ink-muted font-medium block mb-3">
-                {credits.plan === 'free' ? 'Uso total (vitalicio)' : 'Uso este mes'}
+                Uso hoy (se renueva cada día)
               </label>
               <div className="space-y-3">
                 <div>
