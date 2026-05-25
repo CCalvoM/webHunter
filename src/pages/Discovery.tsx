@@ -85,7 +85,6 @@ export default function Discovery() {
   }
 
   const filtered = results
-    .filter(r => (r.user_ratings_total ?? 0) <= 1000)
     .filter(r => filterStatus === 'all' ? true : detectWebStatus(r) === filterStatus)
 
   const noWebCount   = results.filter(r => detectWebStatus(r) === 'no_web').length
