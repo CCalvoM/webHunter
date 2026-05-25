@@ -224,7 +224,7 @@ export default function Pipeline() {
         </div>
 
         {/* Cards de la etapa seleccionada */}
-        <div className="space-y-2 overflow-y-auto flex-1">
+        <div className="space-y-2 overflow-y-auto flex-1" translate="no">
           {getByStage(mobileStage).map(prospect => (
             <ProspectCard
               key={prospect.id}
@@ -262,6 +262,7 @@ export default function Pipeline() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
+                        translate="no"
                         className={`min-h-24 rounded-xl p-2 space-y-2 transition-colors ${
                           snapshot.isDraggingOver ? 'bg-accent-light' : col.color
                         }`}

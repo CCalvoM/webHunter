@@ -15,6 +15,7 @@ export default function VerifyModal({ name, city, onVerify, onSkip }: Props) {
       <div className="absolute inset-0 bg-black/40" />
       <div
         className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm"
+        translate="no"
         onClick={e => e.stopPropagation()}
       >
         <div className="text-2xl mb-3">🗺️</div>

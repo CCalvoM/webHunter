@@ -193,7 +193,7 @@ export default function Discovery() {
           </div>
 
           {/* Results list */}
-          <div className="space-y-2">
+          <div className="space-y-2" translate="no">
             {filtered.map(place => {
               const webStatus = detectWebStatus(place)
               const score = calculateAuditScore(place)

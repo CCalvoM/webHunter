@@ -88,7 +88,7 @@ function FlagModal({
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
         <div className="absolute inset-0 bg-black/40" />
-        <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm text-center" onClick={e => e.stopPropagation()}>
+        <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm text-center" translate="no" onClick={e => e.stopPropagation()}>
           <div className="text-3xl mb-2">✅</div>
           <p className="text-sm text-ink font-medium">Gracias. El flag se ha enviado.</p>
           <button onClick={onClose} className="mt-4 btn-primary text-sm px-6">Cerrar</button>
@@ -100,7 +100,7 @@ function FlagModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
-      <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+      <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm" translate="no" onClick={e => e.stopPropagation()}>
         <h3 className="font-display font-bold text-base text-ink mb-4">Marcar problema con este lead</h3>
         <div className="space-y-2 mb-4">
           {(Object.keys(FLAG_LABELS) as FlagType[]).map(type => (
@@ -350,7 +350,7 @@ export default function ProspectPage() {
       </div>
 
       {/* Stage selector */}
-      <div className="card mb-4">
+      <div className="card mb-4" translate="no">
         <label className="text-xs font-medium text-ink-muted mb-2 block">Etapa del pipeline</label>
         <div className="flex gap-2 flex-wrap">
           {PIPELINE_STAGES.filter(s => s !== 'descartado').map(stage => (
