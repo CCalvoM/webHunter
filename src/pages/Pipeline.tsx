@@ -182,6 +182,7 @@ export default function Pipeline() {
   const activeProspects = prospects.filter(p => p.stage !== 'descartado')
 
   return (
+    <>
     <div className="p-4 md:p-6 md:h-full md:flex md:flex-col">
 
       <div className="mb-4 md:mb-6">
@@ -308,5 +309,6 @@ export default function Pipeline() {
         onSkip={handleVerifySkip}
       />
     )}
+    </>
   )
 }
