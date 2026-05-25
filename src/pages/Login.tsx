@@ -130,7 +130,6 @@ export default function Login() {
                   button_label: 'Entrar',
                   social_provider_text: 'Entrar con {{provider}}',
                   link_text: '¿No tienes cuenta? Regístrate gratis',
-                  forgot_password_label: '¿Olvidaste tu contraseña?',
                 },
                 sign_up: {
                   email_label: 'Email',
