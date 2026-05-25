@@ -12,6 +12,7 @@ import { useDataFlags } from '../hooks/useDataFlags'
 import { useToast } from '../contexts/ToastContext'
 import { generateAudit } from '../lib/audit'
 import { getAuditIssues } from '../lib/places'
+import VerifyModal from '../components/VerifyModal'
 import type { AuditResult, FlagType, PipelineStage, Prospect } from '../types'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -152,6 +153,8 @@ export default function ProspectPage() {
   const [savingNotes, setSavingNotes] = useState(false)
   const [showFlagModal, setShowFlagModal] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [showVerifyModal, setShowVerifyModal] = useState(false)
+  const [pendingStage, setPendingStage] = useState<PipelineStage | null>(null)
 
   useEffect(() => {
     if (!id) return
@@ -170,9 +173,34 @@ export default function ProspectPage() {
 
   const handleStageChange = async (stage: PipelineStage) => {
     if (!prospect) return
+    if (stage === 'contactado' && !prospect.verified_at) {
+      setPendingStage(stage)
+      setShowVerifyModal(true)
+      return
+    }
     await updateStage(prospect.id, stage, prospect.stage)
     setProspect(prev => prev ? { ...prev, stage } : null)
     showToast(`Etapa: ${STAGE_LABELS[stage]}`, 'info')
+  }
+
+  const handleVerifyConfirm = async () => {
+    if (!prospect || !pendingStage) return
+    const now = new Date().toISOString()
+    await updateProspect(prospect.id, { verified_at: now })
+    await updateStage(prospect.id, pendingStage, prospect.stage)
+    setProspect(prev => prev ? { ...prev, stage: pendingStage, verified_at: now } : null)
+    showToast(`Etapa: ${STAGE_LABELS[pendingStage]}`, 'info')
+    setShowVerifyModal(false)
+    setPendingStage(null)
+  }
+
+  const handleVerifySkip = async () => {
+    if (!prospect || !pendingStage) return
+    await updateStage(prospect.id, pendingStage, prospect.stage)
+    setProspect(prev => prev ? { ...prev, stage: pendingStage } : null)
+    showToast(`Etapa: ${STAGE_LABELS[pendingStage]}`, 'info')
+    setShowVerifyModal(false)
+    setPendingStage(null)
   }
 
   const handleGenerateAudit = async () => {
@@ -587,6 +615,16 @@ export default function ProspectPage() {
           prospectId={prospect.id}
           onSubmit={submitFlag}
           onClose={() => setShowFlagModal(false)}
+        />
+      )}
+
+      {/* Verify modal */}
+      {showVerifyModal && (
+        <VerifyModal
+          name={prospect.name}
+          city={prospect.city}
+          onVerify={handleVerifyConfirm}
+          onSkip={handleVerifySkip}
         />
       )}
 

@@ -5,6 +5,7 @@ import type { DropResult } from '@hello-pangea/dnd'
 import { useAuth } from '../hooks/useAuth'
 import { useProspects } from '../hooks/useProspects'
 import { useToast } from '../contexts/ToastContext'
+import VerifyModal from '../components/VerifyModal'
 import type { PipelineStage, Prospect } from '../types'
 
 const FOLLOW_UP_DAYS: Partial<Record<PipelineStage, number>> = {
@@ -106,11 +107,17 @@ function ProspectCard({
 
 export default function Pipeline() {
   const { user } = useAuth()
-  const { prospects, loadProspects, updateStage, dismissFollowUp, loading } = useProspects(user?.id)
+  const { prospects, loadProspects, updateStage, updateProspect, dismissFollowUp, loading } = useProspects(user?.id)
   const navigate = useNavigate()
   const { showToast } = useToast()
 
   const [mobileStage, setMobileStage] = useState<PipelineStage>('encontrado')
+  const [verifyModal, setVerifyModal] = useState<{
+    prospectId: string
+    name: string
+    city: string
+    fromStage: PipelineStage
+  } | null>(null)
 
   useEffect(() => { loadProspects() }, [loadProspects])
 
@@ -124,9 +131,33 @@ export default function Pipeline() {
 
     const fromStage = source.droppableId as PipelineStage
     const toStage = destination.droppableId as PipelineStage
+
+    if (toStage === 'contactado') {
+      const prospect = prospects.find(p => p.id === draggableId)
+      if (prospect && !prospect.verified_at) {
+        setVerifyModal({ prospectId: draggableId, name: prospect.name, city: prospect.city, fromStage })
+        return
+      }
+    }
+
     await updateStage(draggableId, toStage, fromStage)
     const col = COLUMNS.find(c => c.id === toStage)
     if (col) showToast(`Movido a ${col.label}`, 'info')
+  }
+
+  const handleVerifyConfirm = async () => {
+    if (!verifyModal) return
+    await updateProspect(verifyModal.prospectId, { verified_at: new Date().toISOString() })
+    await updateStage(verifyModal.prospectId, 'contactado', verifyModal.fromStage)
+    showToast('Movido a Contactado', 'info')
+    setVerifyModal(null)
+  }
+
+  const handleVerifySkip = async () => {
+    if (!verifyModal) return
+    await updateStage(verifyModal.prospectId, 'contactado', verifyModal.fromStage)
+    showToast('Movido a Contactado', 'info')
+    setVerifyModal(null)
   }
 
   if (loading) {
@@ -268,5 +299,14 @@ export default function Pipeline() {
       </div>
 
     </div>
+
+    {verifyModal && (
+      <VerifyModal
+        name={verifyModal.name}
+        city={verifyModal.city}
+        onVerify={handleVerifyConfirm}
+        onSkip={handleVerifySkip}
+      />
+    )}
   )
 }
