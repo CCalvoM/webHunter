@@ -906,13 +906,29 @@
   <div class="container">
     <div class="label">Disponible ahora</div>
     <h2>Tu pipeline de clientes<br>empieza <em style="color:#ff9270">hoy.</em></h2>
-    <p class="sec-sub">Más de 140 freelancers y agencias ya usan Cloza. Los primeros 200 acceden al plan Pro gratis durante 3 meses.</p>
+    <p class="sec-sub">Acceso gratuito durante la beta. Sin tarjeta de crédito.</p>
     <div style="margin:0 auto;max-width:440px;">
       <a href="https://app.cloza.es" class="cta-btn" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;">
         Empezar gratis →
       </a>
     </div>
-    <p class="cta-note">Sin tarjeta · Los primeros 200 acceden al plan Pro gratis 3 meses</p>
+
+    <!-- Formulario secundario: avísame de novedades -->
+    <div style="margin:28px auto 0;max-width:400px;">
+      <p style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:12px;">¿Prefieres que te avisemos cuando añadamos nuevas funciones?</p>
+      <div id="notify-form" style="display:flex;gap:8px;">
+        <input id="notify-input" type="email" placeholder="tu@email.com" class="cta-input" style="flex:1;margin:0;" />
+        <button onclick="handleSignup('notify-input','notify-form','notify-success')"
+          style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);color:white;padding:0 18px;border-radius:10px;font-size:13px;cursor:pointer;white-space:nowrap;transition:background .2s;"
+          onmouseover="this.style.background='rgba(255,255,255,0.25)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+          Avisar
+        </button>
+      </div>
+      <div id="notify-success" style="display:none;align-items:center;gap:8px;color:rgba(255,255,255,0.6);font-size:13px;">
+        <span style="color:#6ee7b7;">✓</span> Te avisaremos cuando haya novedades.
+      </div>
+    </div>
   </div>
 </section>
 
@@ -954,16 +970,12 @@
         body: JSON.stringify({ email })
       });
       if (res.ok || res.status === 409) {
-        if (res.status !== 409) { localCount++; localStorage.setItem('cloza_count', localCount); }
         document.getElementById(formId).style.display = 'none';
         document.getElementById(successId).style.display = 'flex';
-        updateCounter();
       }
     } catch {
-      localCount++; localStorage.setItem('cloza_count', localCount);
       document.getElementById(formId).style.display = 'none';
       document.getElementById(successId).style.display = 'flex';
-      updateCounter();
     } finally {
       btn.disabled = false; btn.textContent = orig;
     }
