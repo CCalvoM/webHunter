@@ -129,14 +129,20 @@ export default function Login() {
                   password_label: 'Contraseña',
                   button_label: 'Entrar',
                   social_provider_text: 'Entrar con {{provider}}',
-                  link_text: '¿Ya tienes cuenta? Entra aquí',
+                  link_text: '¿No tienes cuenta? Regístrate gratis',
+                  forgot_password_label: '¿Olvidaste tu contraseña?',
                 },
                 sign_up: {
                   email_label: 'Email',
                   password_label: 'Contraseña',
                   button_label: 'Crear cuenta gratis',
                   social_provider_text: 'Registrarse con {{provider}}',
-                  link_text: '¿No tienes cuenta? Regístrate gratis',
+                  link_text: '¿Ya tienes cuenta? Entra aquí',
+                },
+                forgotten_password: {
+                  email_label: 'Email',
+                  button_label: 'Enviar instrucciones',
+                  link_text: '¿Ya tienes cuenta? Entra aquí',
                 },
               },
             }}
