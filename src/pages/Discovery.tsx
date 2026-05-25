@@ -60,6 +60,7 @@ export default function Discovery() {
       return
     }
 
+
     setSearching(true)
     try {
       const data = await searchPlaces(city, sector)
@@ -105,7 +106,10 @@ export default function Discovery() {
           <div className="flex items-center gap-1.5 text-xs text-ink-muted bg-white border border-black/10 rounded-full px-3 py-1.5 flex-shrink-0">
             <Zap size={12} className={canSearch ? 'text-accent' : 'text-red-400'} />
             <span>
-              {credits.searches_used}/{credits.searches_limit} búsquedas
+              {(credits.bonus_searches ?? 0) > 0
+                ? `${credits.bonus_searches} búsquedas de bienvenida`
+                : `${credits.searches_used}/${credits.searches_limit} búsquedas hoy`
+              }
             </span>
           </div>
         )}

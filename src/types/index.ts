@@ -79,6 +79,8 @@ export interface Credits {
   searches_limit: number
   audits_used: number
   audits_limit: number
+  bonus_searches: number
+  bonus_audits: number
   reset_date: string
 }
 

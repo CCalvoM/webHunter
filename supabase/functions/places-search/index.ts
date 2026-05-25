@@ -44,12 +44,15 @@ serve(async (req: Request) => {
   // ── Verificar créditos (server-side) ───────────────────────────────────────
   const { data: credits } = await userClient
     .from('credits')
-    .select('searches_used, searches_limit')
+    .select('searches_used, searches_limit, bonus_searches')
     .eq('user_id', user.id)
     .single()
 
   if (!credits) return json({ error: 'No se pudieron verificar los créditos' }, 500)
-  if (credits.searches_used >= credits.searches_limit) {
+
+  const hasBonus = (credits.bonus_searches ?? 0) > 0
+  const hasDaily = credits.searches_used < credits.searches_limit
+  if (!hasBonus && !hasDaily) {
     return json({ error: 'CREDITS_EXHAUSTED', limit: credits.searches_limit }, 402)
   }
 
@@ -77,10 +80,14 @@ serve(async (req: Request) => {
 
   const data = await placesRes.json()
 
-  // ── Consumir crédito (solo si la búsqueda fue exitosa) ─────────────────────
+  // ── Consumir crédito: bonus primero, luego diario ─────────────────────────
   await userClient
     .from('credits')
-    .update({ searches_used: credits.searches_used + 1 })
+    .update(
+      hasBonus
+        ? { bonus_searches: credits.bonus_searches - 1 }
+        : { searches_used: credits.searches_used + 1 }
+    )
     .eq('user_id', user.id)
 
   const results = (data.places ?? []).map((place: Record<string, unknown>) => ({

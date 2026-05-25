@@ -41,8 +41,12 @@ export function useCredits(userId: string | undefined) {
     setLoading(false)
   }, [userId])
 
-  const canSearch = credits ? credits.searches_used < credits.searches_limit : true
-  const canAudit  = credits ? credits.audits_used  < credits.audits_limit   : true
+  const canSearch = credits
+    ? (credits.bonus_searches ?? 0) > 0 || credits.searches_used < credits.searches_limit
+    : true
+  const canAudit = credits
+    ? (credits.bonus_audits ?? 0) > 0 || credits.audits_used < credits.audits_limit
+    : true
 
   return { credits, loading, loadCredits, canSearch, canAudit }
 }

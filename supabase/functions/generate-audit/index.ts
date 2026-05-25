@@ -121,14 +121,17 @@ serve(async (req: Request) => {
   // ── Verificar créditos de audit ────────────────────────────────────────────
   const { data: credits } = await supabase
     .from('credits')
-    .select('audits_used, audits_limit')
+    .select('audits_used, audits_limit, bonus_audits')
     .eq('user_id', user.id)
     .single()
 
   if (!credits) {
     return new Response(JSON.stringify({ error: 'No se pudieron verificar los créditos' }), { status: 500, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } })
   }
-  if (credits.audits_used >= credits.audits_limit) {
+
+  const hasAuditBonus = (credits.bonus_audits ?? 0) > 0
+  const hasAuditDaily = credits.audits_used < credits.audits_limit
+  if (!hasAuditBonus && !hasAuditDaily) {
     return new Response(JSON.stringify({ error: 'CREDITS_EXHAUSTED', limit: credits.audits_limit }), { status: 402, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } })
   }
 
@@ -249,10 +252,14 @@ Responde ÚNICAMENTE con este JSON exacto, sin texto adicional:
     result = { score: 0, issues: [], lost_clients_estimate: '', pitch: rawText }
   }
 
-  // ── Consumir crédito de audit ──────────────────────────────────────────────
+  // ── Consumir crédito de audit: bonus primero, luego diario ───────────────
   await supabase
     .from('credits')
-    .update({ audits_used: credits.audits_used + 1 })
+    .update(
+      hasAuditBonus
+        ? { bonus_audits: credits.bonus_audits - 1 }
+        : { audits_used: credits.audits_used + 1 }
+    )
     .eq('user_id', user.id)
 
   return new Response(

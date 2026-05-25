@@ -203,43 +203,51 @@ export default function Settings() {
           {credits && (
             <div className="pt-2 border-t border-black/6">
               <label className="text-xs text-ink-muted font-medium block mb-3">
-                Uso hoy (se renueva cada día)
+                {(credits.bonus_searches ?? 0) > 0 || (credits.bonus_audits ?? 0) > 0
+                  ? 'Créditos de bienvenida'
+                  : 'Uso hoy (se renueva cada día)'}
               </label>
               <div className="space-y-3">
                 <div>
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-ink-muted">Búsquedas</span>
                     <span className="text-ink font-medium">
-                      {credits.searches_used} / {credits.searches_limit}
+                      {(credits.bonus_searches ?? 0) > 0
+                        ? `${credits.bonus_searches} restantes`
+                        : `${credits.searches_used} / ${credits.searches_limit} hoy`
+                      }
                     </span>
                   </div>
                   <div className="h-1.5 bg-black/6 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${searchPct >= 90 ? 'bg-red-400' : 'bg-accent'}`}
-                      style={{ width: `${Math.min(searchPct, 100)}%` }}
-                    />
+                    {(credits.bonus_searches ?? 0) > 0
+                      ? <div className="h-full rounded-full transition-all bg-accent" style={{ width: `${Math.min((credits.bonus_searches / 20) * 100, 100)}%` }} />
+                      : <div className={`h-full rounded-full transition-all ${searchPct >= 90 ? 'bg-red-400' : 'bg-accent'}`} style={{ width: `${Math.min(searchPct, 100)}%` }} />
+                    }
                   </div>
                 </div>
                 <div>
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="text-ink-muted">Audits con IA</span>
                     <span className="text-ink font-medium">
-                      {credits.audits_used} / {credits.audits_limit}
+                      {(credits.bonus_audits ?? 0) > 0
+                        ? `${credits.bonus_audits} restantes`
+                        : `${credits.audits_used} / ${credits.audits_limit} hoy`
+                      }
                     </span>
                   </div>
                   <div className="h-1.5 bg-black/6 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${auditPct >= 90 ? 'bg-red-400' : 'bg-accent'}`}
-                      style={{ width: `${Math.min(auditPct, 100)}%` }}
-                    />
+                    {(credits.bonus_audits ?? 0) > 0
+                      ? <div className="h-full rounded-full transition-all bg-accent" style={{ width: `${Math.min((credits.bonus_audits / 5) * 100, 100)}%` }} />
+                      : <div className={`h-full rounded-full transition-all ${auditPct >= 90 ? 'bg-red-400' : 'bg-accent'}`} style={{ width: `${Math.min(auditPct, 100)}%` }} />
+                    }
                   </div>
                 </div>
               </div>
               <p className="text-xs text-ink-faint mt-2">
-                {credits.plan === 'free'
-                  ? 'Plan gratuito — límite de por vida, sin reseteo'
+                {(credits.bonus_searches ?? 0) > 0 || (credits.bonus_audits ?? 0) > 0
+                  ? 'Bonus de bienvenida — cuando se agoten, se renuevan 5 búsquedas y 2 audits al día'
                   : credits.reset_date
-                    ? `Reseteo el ${new Date(credits.reset_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`
+                    ? `Se renueva el ${new Date(credits.reset_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}`
                     : null
                 }
               </p>
