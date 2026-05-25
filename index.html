@@ -683,7 +683,7 @@
     <span class="nav-logo-name">Cloza</span>
   </a>
   <span class="nav-pill">🇪🇸 Hecho para España</span>
-  <a href="#waitlist" class="nav-cta">Unirme →</a>
+  <a href="https://app.cloza.es" class="nav-cta">Acceder a la app →</a>
 </nav>
 
 <!-- HERO -->
@@ -694,7 +694,7 @@
 
     <div class="hero-eyebrow">
       <span class="hero-dot"></span>
-      Lista de espera abierta · Acceso anticipado gratis
+      App disponible · Acceso anticipado gratis
     </div>
 
     <h1>Cierra más clientes web.</h1>
@@ -704,16 +704,12 @@
       Encuentra negocios locales sin presencia digital, analiza su situación en segundos y gestiona el pipeline hasta el cierre — todo desde un solo sitio.
     </p>
 
-    <div class="wl-form" id="hero-form">
-      <input type="email" class="wl-input" placeholder="tu@email.com" id="hero-email">
-      <button class="wl-btn" onclick="handleSignup('hero-email','hero-form','hero-success')">
-        Quiero acceso →
-      </button>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:16px;">
+      <a href="https://app.cloza.es" class="wl-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:8px;padding:0 32px;height:52px;font-size:15px;">
+        Empezar gratis →
+      </a>
+      <p style="font-size:12px;color:var(--ink-faint);">Sin tarjeta · Los primeros 200 acceden al plan Pro gratis 3 meses</p>
     </div>
-    <div class="wl-success" id="hero-success">
-      <span>✓</span> ¡Estás dentro! Te avisamos cuando abramos.
-    </div>
-    <p class="wl-note">Sin tarjeta · Los primeros 200 acceden gratis 3 meses</p>
 
     <div class="social-proof">
       <div class="avatars">
@@ -929,7 +925,7 @@
           <li class="dim">Outreach directo</li>
           <li class="dim">Sincronización Google Calendar</li>
         </ul>
-        <button class="price-btn" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})">
+        <button class="price-btn" onclick="window.location.href='https://app.cloza.es'">
           Empezar gratis
         </button>
       </div>
@@ -949,7 +945,7 @@
           <li>Google Calendar sync</li>
           <li>Métricas de conversión</li>
         </ul>
-        <button class="price-btn filled" onclick="document.getElementById('waitlist').scrollIntoView({behavior:'smooth'})">
+        <button class="price-btn filled" onclick="window.location.href='https://app.cloza.es'">
           Quiero acceso anticipado →
         </button>
       </div>
@@ -961,19 +957,15 @@
 <!-- CTA FINAL -->
 <section class="cta-sec" id="waitlist">
   <div class="container">
-    <div class="label">Lista de espera</div>
+    <div class="label">Disponible ahora</div>
     <h2>Tu pipeline de clientes<br>empieza <em style="color:#ff9270">hoy.</em></h2>
-    <p class="sec-sub">Únete a los +140 freelancers y agencias que ya están esperando. Los primeros 200 acceden al plan Pro gratis durante 3 meses.</p>
-    <div class="cta-form" id="cta-form">
-      <input type="email" class="cta-input" placeholder="tu@email.com" id="cta-email">
-      <button class="cta-btn" onclick="handleSignup('cta-email','cta-form','cta-success')">
-        Unirme →
-      </button>
+    <p class="sec-sub">Más de 140 freelancers y agencias ya usan Cloza. Los primeros 200 acceden al plan Pro gratis durante 3 meses.</p>
+    <div style="margin:0 auto;max-width:440px;">
+      <a href="https://app.cloza.es" class="cta-btn" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;">
+        Empezar gratis →
+      </a>
     </div>
-    <div class="wl-success" id="cta-success" style="background:rgba(21,128,61,0.15);border-color:rgba(21,128,61,0.3);max-width:440px">
-      <span>✓</span> ¡Perfecto! Estás en la lista.
-    </div>
-    <p class="cta-note">Sin tarjeta · Sin spam · Solo cuando abramos</p>
+    <p class="cta-note">Sin tarjeta · Los primeros 200 acceden al plan Pro gratis 3 meses</p>
   </div>
 </section>
 
