@@ -711,16 +711,6 @@
       <p style="font-size:12px;color:var(--ink-faint);">Sin tarjeta · Los primeros 200 acceden al plan Pro gratis 3 meses</p>
     </div>
 
-    <div class="social-proof">
-      <div class="avatars">
-        <div class="av" style="background:#e85d2f">AM</div>
-        <div class="av" style="background:#534AB7">SG</div>
-        <div class="av" style="background:#15803d">JR</div>
-        <div class="av" style="background:#0284c7">PL</div>
-      </div>
-      <p class="social-text"><strong id="counter">+140 freelancers y agencias</strong> ya están en lista de espera</p>
-    </div>
-
   </div>
 </section>
 
@@ -861,49 +851,6 @@
   </div>
 </section>
 
-<!-- TESTIMONIALS -->
-<section style="background:white;border-top:1px solid var(--border)">
-  <div class="container">
-    <div class="label">Beta privada</div>
-    <h2>Lo que dicen los primeros<br>en <em>probarlo.</em></h2>
-    <div class="testi-grid">
-      <div class="testi">
-        <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">"Antes tardaba una tarde entera en encontrar 20 leads decentes. Ahora en 15 minutos tengo 40 con el audit hecho. El pitch se escribe solo."</p>
-        <div class="testi-author">
-          <div class="testi-av" style="background:#e85d2f">AM</div>
-          <div>
-            <div class="testi-name">Alejandro M.</div>
-            <div class="testi-role">Freelance diseño web · Madrid</div>
-          </div>
-        </div>
-      </div>
-      <div class="testi">
-        <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">"Lo del audit es un game changer. En lugar de decirles 'necesitas una web', les muestro cuántos clientes están perdiendo. La tasa de respuesta se ha triplicado."</p>
-        <div class="testi-author">
-          <div class="testi-av" style="background:#534AB7">SG</div>
-          <div>
-            <div class="testi-name">Sara G.</div>
-            <div class="testi-role">Agencia digital · Barcelona</div>
-          </div>
-        </div>
-      </div>
-      <div class="testi">
-        <div class="testi-stars">★★★★★</div>
-        <p class="testi-text">"El pipeline me ha salvado la vida. Tenía 60 leads en un Excel y no sabía a quién había contactado. Ahora lo tengo todo bajo control."</p>
-        <div class="testi-author">
-          <div class="testi-av" style="background:#15803d">JR</div>
-          <div>
-            <div class="testi-name">Jorge R.</div>
-            <div class="testi-role">Desarrollador web · Valencia</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- PRICING -->
 <section id="precios">
   <div class="container" style="text-align:center">
@@ -981,14 +928,7 @@
 <script>
   const SUPABASE_URL = 'https://eandeidsiljaellamrhi.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhbmRlaWRzaWxqYWVsbGFtcmhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMjA2NTAsImV4cCI6MjA5NDU5NjY1MH0.bLqQx0xOLTWSJmXMsXlg2kYMfhYSbNkyLBD0g-Js0O0';
-  const SEED = 140;
   let localCount = parseInt(localStorage.getItem('cloza_count') || '0');
-
-  function updateCounter() {
-    const el = document.getElementById('counter');
-    if (el) el.textContent = '+' + (SEED + localCount) + ' freelancers y agencias';
-  }
-  updateCounter();
 
   async function handleSignup(inputId, formId, successId) {
     const input = document.getElementById(inputId);
