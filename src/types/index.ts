@@ -17,6 +17,7 @@ export interface Prospect {
   address: string
   city: string
   phone?: string
+  email?: string | null
   website?: string
   google_maps_url?: string
   rating?: number

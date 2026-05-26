@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   ArrowLeft, Copy, Check, Sparkles, Calendar, FileText,
-  Trash2, ExternalLink, Phone, Globe, AlertCircle, Flag, MapPin, Loader2, MessageCircle,
+  Trash2, ExternalLink, Phone, Globe, AlertCircle, Flag, MapPin, Loader2, MessageCircle, Mail,
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useProspects } from '../hooks/useProspects'
@@ -147,6 +147,8 @@ export default function ProspectPage() {
   const [loadingProspect, setLoadingProspect] = useState(true)
   const [notes, setNotes] = useState('')
   const [followupDate, setFollowupDate] = useState('')
+  const [email, setEmail] = useState('')
+  const [savingEmail, setSavingEmail] = useState(false)
   const [generatingAudit, setGeneratingAudit] = useState(false)
   const [auditError, setAuditError] = useState('')
   const [copied, setCopied] = useState(false)
@@ -164,6 +166,7 @@ export default function ProspectPage() {
         setProspect(p)
         setNotes(p.notes || '')
         setFollowupDate(p.followup_date || '')
+        setEmail(p.email || '')
       }
       setLoadingProspect(false)
     })
@@ -251,9 +254,19 @@ export default function ProspectPage() {
 
   const handleGmailDraft = () => {
     if (!prospect?.audit_pitch) return
+    const to = email.trim() ? `&to=${encodeURIComponent(email.trim())}` : ''
     const subject = encodeURIComponent(`Sobre la presencia digital de ${prospect.name}`)
     const body = encodeURIComponent(resolvePitch())
-    window.open(`https://mail.google.com/mail/?view=cm&su=${subject}&body=${body}`, '_blank')
+    window.open(`https://mail.google.com/mail/?view=cm${to}&su=${subject}&body=${body}`, '_blank')
+  }
+
+  const handleSaveEmail = async () => {
+    if (!prospect || email === (prospect.email ?? '')) return
+    setSavingEmail(true)
+    await updateProspect(prospect.id, { email: email.trim() || null })
+    setProspect(prev => prev ? { ...prev, email: email.trim() || null } : null)
+    setSavingEmail(false)
+    if (email.trim()) showToast('Email guardado', 'info')
   }
 
   const handleSaveNotes = async () => {
@@ -413,6 +426,28 @@ export default function ProspectPage() {
                 Ver en Maps <ExternalLink size={11} />
               </a>
             </div>
+          )}
+        </div>
+
+        {/* Email — campo editable */}
+        <div className="mt-4 pt-4 border-t border-black/6">
+          <div className="text-xs text-ink-faint mb-1.5 flex items-center gap-1"><Mail size={11} /> Email de contacto</div>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              onBlur={handleSaveEmail}
+              onKeyDown={e => e.key === 'Enter' && handleSaveEmail()}
+              placeholder="correo@negocio.com"
+              className="input text-sm flex-1 py-1.5"
+            />
+            {savingEmail && <span className="text-xs text-ink-faint self-center">Guardando...</span>}
+          </div>
+          {!email && (
+            <p className="text-xs text-ink-faint mt-1">
+              Añade el email para pre-rellenar el destinatario al crear borradores en Gmail.
+            </p>
           )}
         </div>
       </div>
