@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Kanban, TrendingUp, Users, CheckCircle, MessageSquare } from 'lucide-react'
+import { Search, Kanban, TrendingUp, Users, CheckCircle, MessageSquare, Bell } from 'lucide-react'
 import { useProspects } from '../hooks/useProspects'
 import { useAuth } from '../hooks/useAuth'
 import type { PipelineStage } from '../types'
@@ -45,6 +45,52 @@ export default function Dashboard() {
     ? Math.round((stats.cerrados / stats.total) * 100)
     : 0
 
+  // Tasa de respuesta: de los contactados, cuántos respondieron
+  const contactadosTotal = active.filter(p => ['contactado', 'respondio', 'demo', 'cerrado'].includes(p.stage)).length
+  const respondieronTotal = active.filter(p => ['respondio', 'demo', 'cerrado'].includes(p.stage)).length
+  const responseRate = contactadosTotal > 0 ? Math.round((respondieronTotal / contactadosTotal) * 100) : 0
+
+  // Mejor sector y ciudad por conversión
+  const topSector = (() => {
+    const map = new Map<string, { total: number; cerrados: number }>()
+    active.forEach(p => {
+      if (!p.category) return
+      const e = map.get(p.category) ?? { total: 0, cerrados: 0 }
+      e.total++
+      if (p.stage === 'cerrado') e.cerrados++
+      map.set(p.category, e)
+    })
+    let best = '', bestRate = -1
+    map.forEach((v, k) => {
+      if (v.total < 2) return
+      const rate = v.cerrados / v.total
+      if (rate > bestRate) { bestRate = rate; best = k }
+    })
+    return best || null
+  })()
+
+  const topCity = (() => {
+    const map = new Map<string, { total: number; cerrados: number }>()
+    active.forEach(p => {
+      if (!p.city) return
+      const e = map.get(p.city) ?? { total: 0, cerrados: 0 }
+      e.total++
+      if (p.stage === 'cerrado') e.cerrados++
+      map.set(p.city, e)
+    })
+    let best = '', bestCount = -1
+    map.forEach((v, k) => {
+      if (v.total > bestCount) { bestCount = v.total; best = k }
+    })
+    return best || null
+  })()
+
+  // Seguimientos pendientes (followup_date <= hoy)
+  const today = new Date().toISOString().slice(0, 10)
+  const pendingFollowups = active.filter(p =>
+    p.followup_date && p.followup_date <= today && p.stage !== 'cerrado'
+  )
+
   const recent = prospects.slice(0, 5)
 
   // Conversión por etapa del funnel
@@ -55,16 +101,31 @@ export default function Dashboard() {
     return { stage, count, rate }
   })
 
+  const displayName = user?.user_metadata?.display_name
+
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
 
       {/* Header */}
       <div className="mb-8">
         <h1 className="font-display font-bold text-2xl text-ink">
-          Hola{user?.email ? `, ${user.email.split('@')[0]}` : ''} 👋
+          Hola{displayName ? `, ${displayName}` : user?.email ? `, ${user.email.split('@')[0]}` : ''} 👋
         </h1>
         <p className="text-ink-muted text-sm mt-1">Aquí tienes el resumen de tu pipeline.</p>
       </div>
+
+      {/* Seguimientos pendientes */}
+      {pendingFollowups.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+          <Bell size={15} className="text-amber-600 flex-shrink-0" />
+          <span className="text-sm text-amber-800 flex-1">
+            Tienes <strong>{pendingFollowups.length} seguimiento{pendingFollowups.length > 1 ? 's' : ''}</strong> pendiente{pendingFollowups.length > 1 ? 's' : ''} hoy
+          </span>
+          <Link to="/app/pipeline" className="text-xs font-medium text-amber-700 hover:underline flex-shrink-0">
+            Ver pipeline →
+          </Link>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -77,17 +138,18 @@ export default function Dashboard() {
           ))
         ) : (
           [
-            { label: 'Total leads', value: stats.total, icon: Users, color: 'text-ink' },
-            { label: 'Contactados', value: stats.contactados, icon: MessageSquare, color: 'text-blue-500' },
-            { label: 'En demo', value: stats.demos, icon: TrendingUp, color: 'text-purple-500' },
-            { label: 'Cerrados', value: stats.cerrados, icon: CheckCircle, color: 'text-brand-green' },
-          ].map(({ label, value, icon: Icon, color }) => (
+            { label: 'Total leads', value: stats.total, icon: Users, color: 'text-ink', sub: null },
+            { label: 'Contactados', value: stats.contactados, icon: MessageSquare, color: 'text-blue-500', sub: null },
+            { label: 'Tasa respuesta', value: `${responseRate}%`, icon: TrendingUp, color: 'text-amber-500', sub: `${respondieronTotal} de ${contactadosTotal}` },
+            { label: 'Cerrados', value: stats.cerrados, icon: CheckCircle, color: 'text-brand-green', sub: `${conversionRate}% conversión` },
+          ].map(({ label, value, icon: Icon, color, sub }) => (
             <div key={label} className="card">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs text-ink-muted font-medium">{label}</span>
                 <Icon size={16} className={color} />
               </div>
               <div className="font-display font-bold text-3xl text-ink">{value}</div>
+              {sub && <div className="text-xs text-ink-faint mt-1">{sub}</div>}
             </div>
           ))
         )}
@@ -118,6 +180,30 @@ export default function Dashboard() {
           </div>
         </Link>
       </div>
+
+      {/* Insights sector y ciudad */}
+      {!loading && (topSector || topCity) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+          {topSector && (
+            <div className="card">
+              <div className="text-xs text-ink-muted font-medium mb-1">Sector con más leads</div>
+              <div className="font-display font-bold text-lg text-ink">{topSector}</div>
+              <div className="text-xs text-ink-faint mt-0.5">
+                {active.filter(p => p.category === topSector).length} leads en total
+              </div>
+            </div>
+          )}
+          {topCity && (
+            <div className="card">
+              <div className="text-xs text-ink-muted font-medium mb-1">Ciudad con más leads</div>
+              <div className="font-display font-bold text-lg text-ink">{topCity}</div>
+              <div className="text-xs text-ink-faint mt-0.5">
+                {active.filter(p => p.city === topCity).length} leads en total
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Funnel de conversión */}
       {!loading && active.length > 0 && (
