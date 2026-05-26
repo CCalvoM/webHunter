@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { effectiveWebStatus } from './places'
 import type { Prospect, AuditResult } from '../types'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
@@ -30,7 +31,7 @@ export async function generateAudit(prospect: Prospect): Promise<AuditResult> {
       address: prospect.address,
       city: prospect.city,
       sector: prospect.category,
-      web_status: prospect.web_status,
+      web_status: effectiveWebStatus(prospect.web_status, prospect.pagespeed_score),
       rating: prospect.rating,
       review_count: prospect.review_count,
       website: prospect.website,

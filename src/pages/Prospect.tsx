@@ -11,7 +11,7 @@ import { useCredits } from '../hooks/useCredits'
 import { useDataFlags } from '../hooks/useDataFlags'
 import { useToast } from '../contexts/ToastContext'
 import { generateAudit } from '../lib/audit'
-import { getAuditIssues } from '../lib/places'
+import { getAuditIssues, effectiveWebStatus } from '../lib/places'
 import VerifyModal from '../components/VerifyModal'
 import type { AuditResult, FlagType, PipelineStage, Prospect } from '../types'
 
@@ -327,8 +327,8 @@ export default function ProspectPage() {
             </span>
             <span className="text-ink-faint">·</span>
             <span className="text-sm text-ink-muted">{prospect.category}</span>
-            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${WEB_STATUS_COLORS[prospect.web_status]}`}>
-              {WEB_STATUS_LABELS[prospect.web_status]}
+            <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${WEB_STATUS_COLORS[effectiveWebStatus(prospect.web_status, prospect.pagespeed_score)]}`}>
+              {WEB_STATUS_LABELS[effectiveWebStatus(prospect.web_status, prospect.pagespeed_score)]}
             </span>
             {prospect.audit_score !== undefined && (
               <span className={`text-xs font-bold ${
@@ -424,7 +424,10 @@ export default function ProspectPage() {
           <div className="flex items-center gap-2 flex-shrink-0">
             {credits && (
               <span className="text-xs text-ink-faint">
-                {credits.audits_used}/{credits.audits_limit} audits usados
+                {(credits.bonus_audits ?? 0) > 0
+                  ? `${credits.bonus_audits} audits de bienvenida`
+                  : `${credits.audits_used}/${credits.audits_limit} audits hoy`
+                }
               </span>
             )}
             <button

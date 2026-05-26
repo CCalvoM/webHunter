@@ -81,6 +81,20 @@ export function detectWebStatus(place: PlaceResult): WebStatus {
 }
 
 
+// ─── Web status efectivo (incorpora PageSpeed para detectar web rota) ────────
+export function effectiveWebStatus(
+  webStatus: WebStatus,
+  pagespeedScore: number | null | undefined,
+): WebStatus {
+  if (
+    pagespeedScore != null &&
+    pagespeedScore < 20 &&
+    webStatus !== 'no_web' &&
+    webStatus !== 'fake_web'
+  ) return 'broken_web'
+  return webStatus
+}
+
 // ─── Calcular score de presencia digital ─────────────────────────────────────
 export function calculateAuditScore(place: PlaceResult, webStatus?: WebStatus): number {
   let score = 0
