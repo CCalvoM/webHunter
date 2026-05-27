@@ -97,21 +97,37 @@ create table if not exists rate_limits (
 );
 create index if not exists rate_limits_lookup on rate_limits (user_id, fn, created_at);
 
--- ─── RLS (Row Level Security) ─────────────────────────────────
-alter table prospects       enable row level security;
-alter table rate_limits     enable row level security;
-alter table activities      enable row level security;
-alter table templates       enable row level security;
-alter table credits         enable row level security;
-alter table data_flags      enable row level security;
-alter table pipeline_events enable row level security;
+-- STRIPE CUSTOMERS — suscripciones Stripe por usuario
+create table if not exists stripe_customers (
+  id                     uuid default gen_random_uuid() primary key,
+  user_id                uuid references auth.users(id) on delete cascade not null unique,
+  stripe_customer_id     text not null unique,
+  stripe_subscription_id text,
+  status                 text check (status in ('active','trialing','past_due','canceled','unpaid','incomplete')),
+  current_period_end     timestamptz,
+  cancel_at_period_end   boolean default false,
+  created_at             timestamptz default now(),
+  updated_at             timestamptz default now()
+);
 
-create policy "prospects_own"       on prospects       using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "activities_own"      on activities      using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "templates_own"       on templates       using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "credits_select"      on credits         for select using (auth.uid() = user_id);
-create policy "data_flags_own"      on data_flags      using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "pipeline_events_own" on pipeline_events using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- ─── RLS (Row Level Security) ─────────────────────────────────
+alter table prospects        enable row level security;
+alter table rate_limits      enable row level security;
+alter table activities       enable row level security;
+alter table templates        enable row level security;
+alter table credits          enable row level security;
+alter table data_flags       enable row level security;
+alter table pipeline_events  enable row level security;
+alter table stripe_customers enable row level security;
+
+create policy "prospects_own"           on prospects        using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "activities_own"          on activities       using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "templates_own"           on templates        using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "credits_select"          on credits          for select using (auth.uid() = user_id);
+create policy "data_flags_own"          on data_flags       using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "pipeline_events_own"     on pipeline_events  using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- stripe_customers: los usuarios solo pueden leer su propia fila; el webhook usa service role
+create policy "stripe_customers_select" on stripe_customers for select using (auth.uid() = user_id);
 
 -- ─── Auto-crear credits al registrarse ───────────────────────
 create or replace function handle_new_user()

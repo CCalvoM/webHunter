@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Edit2, Check, X, LogOut } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { Plus, Trash2, Edit2, Check, X, LogOut, Zap, ExternalLink, Loader2, Star } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useCredits } from '../hooks/useCredits'
 import { useTemplates } from '../hooks/useTemplates'
+import { useToast } from '../contexts/ToastContext'
 import { supabase } from '../lib/supabase'
+import { redirectToCheckout, redirectToPortal } from '../lib/stripe'
 import type { Template } from '../types'
 
 const SECTORS = [
@@ -115,14 +117,17 @@ function TemplateRow({
 export default function Settings() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const { credits, loadCredits } = useCredits(user?.id)
   const { templates, loading: loadingTemplates, loadTemplates, createTemplate, updateTemplate, deleteTemplate } = useTemplates(user?.id)
+  const { showToast } = useToast()
 
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState<TemplateFormData>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [displayName, setDisplayName] = useState(user?.user_metadata?.display_name || '')
   const [savingName, setSavingName] = useState(false)
+  const [billingLoading, setBillingLoading] = useState(false)
 
   const handleSaveName = async () => {
     if (!displayName.trim()) return
@@ -135,6 +140,36 @@ export default function Settings() {
     loadCredits()
     loadTemplates()
   }, [loadCredits, loadTemplates])
+
+  // Mostrar toast de éxito tras upgrade
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('upgraded') === 'true') {
+      loadCredits()
+      showToast('¡Plan Pro activado! Tus créditos se han actualizado.')
+      navigate('/app/settings', { replace: true })
+    }
+  }, [location.search, loadCredits, showToast, navigate])
+
+  const handleUpgrade = async () => {
+    setBillingLoading(true)
+    try {
+      await redirectToCheckout()
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Error al iniciar el pago', 'error')
+      setBillingLoading(false)
+    }
+  }
+
+  const handleManageSubscription = async () => {
+    setBillingLoading(true)
+    try {
+      await redirectToPortal()
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Error al abrir el portal', 'error')
+      setBillingLoading(false)
+    }
+  }
 
   const handleCreateTemplate = async () => {
     if (!form.name || !form.subject || !form.body) return
@@ -364,12 +399,92 @@ export default function Settings() {
         </button>
       </div>
 
+      {/* Plan y facturación */}
+      {credits?.plan === 'pro' ? (
+        <div className="card mb-4">
+          <div className="flex items-center gap-2 mb-4">
+            <h2 className="font-display font-bold text-base text-ink">Plan y facturación</h2>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-green-light text-brand-green text-xs font-bold rounded-full">
+              <Star size={10} fill="currentColor" /> Pro
+            </span>
+          </div>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-ink-muted">Búsquedas este mes</span>
+              <span className="font-medium text-ink">{credits.searches_used} / {credits.searches_limit}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-ink-muted">Audits este mes</span>
+              <span className="font-medium text-ink">{credits.audits_used} / {credits.audits_limit}</span>
+            </div>
+            {credits.reset_date && (
+              <div className="flex items-center justify-between">
+                <span className="text-ink-muted">Próxima renovación</span>
+                <span className="font-medium text-ink">
+                  {new Date(credits.reset_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={handleManageSubscription}
+            disabled={billingLoading}
+            className="mt-4 flex items-center gap-1.5 text-xs text-ink-muted border border-black/15 px-3 py-1.5 rounded-full hover:border-black/30 transition-colors disabled:opacity-50"
+          >
+            {billingLoading ? <Loader2 size={12} className="animate-spin" /> : <ExternalLink size={12} />}
+            Gestionar suscripción
+          </button>
+        </div>
+      ) : (
+        <div className="card mb-4 border-accent/20 bg-gradient-to-br from-white to-accent-light/30">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <h2 className="font-display font-bold text-base text-ink">Pasa a Pro</h2>
+              <p className="text-sm text-ink-muted mt-0.5">Más búsquedas, más audits, sin límites de por vida.</p>
+            </div>
+            <span className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 bg-accent text-white text-xs font-bold rounded-full">
+              <Zap size={11} /> Pro
+            </span>
+          </div>
+
+          {/* Comparativa */}
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="bg-black/4 rounded-xl p-3">
+              <div className="text-xs font-medium text-ink-muted mb-2">Plan actual · Free</div>
+              <ul className="space-y-1 text-xs text-ink-muted">
+                <li>· {credits?.searches_limit ?? 20} búsquedas (de por vida)</li>
+                <li>· {credits?.audits_limit ?? 5} audits con IA (de por vida)</li>
+                <li>· Sin reseteo mensual</li>
+              </ul>
+            </div>
+            <div className="bg-accent-light rounded-xl p-3 border border-accent/20">
+              <div className="text-xs font-medium text-accent mb-2">Plan Pro</div>
+              <ul className="space-y-1 text-xs text-ink">
+                <li className="font-medium">· 100 búsquedas / mes</li>
+                <li className="font-medium">· 50 audits con IA / mes</li>
+                <li className="font-medium">· Reset automático mensual</li>
+              </ul>
+            </div>
+          </div>
+
+          <button
+            onClick={handleUpgrade}
+            disabled={billingLoading}
+            className="btn-primary w-full flex items-center justify-center gap-2 text-sm"
+          >
+            {billingLoading
+              ? <><Loader2 size={15} className="animate-spin" /> Redirigiendo...</>
+              : <><Zap size={15} /> Activar Plan Pro</>
+            }
+          </button>
+        </div>
+      )}
+
       {/* Próximamente */}
       <div className="card">
         <h2 className="font-display font-bold text-base text-ink mb-4">Próximamente</h2>
         <ul className="space-y-2 text-sm text-ink-muted">
           <li>🔑 Integración Google Calendar para seguimientos</li>
-          <li>💳 Gestión de plan y facturación</li>
           <li>📊 Exportar leads a CSV</li>
         </ul>
       </div>
