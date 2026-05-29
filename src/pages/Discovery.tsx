@@ -233,7 +233,7 @@ export default function Discovery() {
               )
 
               return (
-                <div key={place.place_id} className="card hover:border-black/20 transition-all">
+                <div key={place.place_id} className="card hover:border-black/15 hover:shadow-card-hover transition-all duration-150">
                   <div className="flex items-start gap-3">
 
                     {/* Score estimado */}
@@ -303,9 +303,9 @@ export default function Discovery() {
 
       {/* Empty state */}
       {results.length === 0 && !searching && (
-        <div className="text-center py-16 text-ink-muted">
-          <div className="text-5xl mb-4">🗺️</div>
-          <p className="text-sm">Introduce una ciudad y un sector para empezar.</p>
+        <div className="text-center py-16 text-ink-faint">
+          <MapPin size={32} className="mx-auto mb-4 opacity-40" />
+          <p className="text-sm text-ink-muted">Introduce una ciudad y un sector para empezar.</p>
         </div>
       )}
 

@@ -71,11 +71,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md animate-slide-up">
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-4">
+          <div className="inline-flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-accent rounded-xl flex items-center justify-center">
               <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
                 <circle cx="8" cy="8" r="5" stroke="white" strokeWidth="1.8"/>
@@ -88,7 +88,7 @@ export default function Login() {
         </div>
 
         {/* Auth UI */}
-        <div className="card shadow-sm">
+        <div className="card">
           <Auth
             supabaseClient={supabase}
             appearance={{

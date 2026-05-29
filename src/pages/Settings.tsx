@@ -89,7 +89,7 @@ function TemplateRow({
   }
 
   return (
-    <div className="border border-black/10 rounded-xl p-4 hover:border-black/20 transition-colors">
+    <div className="border border-black/[0.08] rounded-xl p-4 hover:border-black/[0.15] transition-colors duration-150">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">

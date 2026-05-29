@@ -62,8 +62,8 @@ export default function OnboardingModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+      <div className="bg-white rounded-2xl shadow-soft w-full max-w-md relative animate-slide-up">
 
         <button
           onClick={handleSkip}
@@ -92,8 +92,8 @@ export default function OnboardingModal({ onClose }: { onClose: () => void }) {
               <div className="text-center mb-6 mt-2">
                 <div className="w-14 h-14 bg-accent-light rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <svg width="24" height="24" viewBox="0 0 18 18" fill="none">
-                    <circle cx="8" cy="8" r="5" stroke="#6366f1" strokeWidth="1.8"/>
-                    <line x1="12" y1="12" x2="16" y2="16" stroke="#6366f1" strokeWidth="1.8" strokeLinecap="round"/>
+                    <circle cx="8" cy="8" r="5" stroke="#e85d2f" strokeWidth="1.8"/>
+                    <line x1="12" y1="12" x2="16" y2="16" stroke="#e85d2f" strokeWidth="1.8" strokeLinecap="round"/>
                   </svg>
                 </div>
                 <h2 className="font-display font-bold text-xl text-ink mb-2">Bienvenido a Cloza</h2>

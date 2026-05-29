@@ -78,7 +78,7 @@ export default function FeedbackButton() {
                         className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-medium border transition-colors ${
                           type === t.value
                             ? 'border-accent bg-accent-light text-accent'
-                            : 'border-black/10 text-ink-muted hover:border-black/20'
+                            : 'border-black/[0.08] text-ink-muted hover:border-black/[0.15]'
                         }`}
                       >
                         <span className="text-base">{t.emoji}</span>
