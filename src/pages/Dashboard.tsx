@@ -131,25 +131,25 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {loading ? (
           [...Array(4)].map((_, i) => (
-            <div key={i} className="card animate-pulse">
-              <div className="h-3 bg-black/6 rounded w-20 mb-3" />
-              <div className="h-8 bg-black/8 rounded w-12" />
+            <div key={i} className="card p-6 animate-pulse">
+              <div className="h-3 bg-black/6 rounded w-20 mb-4" />
+              <div className="h-10 bg-black/8 rounded w-14" />
             </div>
           ))
         ) : (
           [
-            { label: 'Total leads', value: stats.total, icon: Users, color: 'text-ink', sub: null },
+            { label: 'Total leads', value: stats.total, icon: Users, color: 'text-ink-muted', sub: null },
             { label: 'Contactados', value: stats.contactados, icon: MessageSquare, color: 'text-blue-500', sub: null },
             { label: 'Tasa respuesta', value: `${responseRate}%`, icon: TrendingUp, color: 'text-amber-500', sub: `${respondieronTotal} de ${contactadosTotal}` },
-            { label: 'Cerrados', value: stats.cerrados, icon: CheckCircle, color: 'text-brand-green', sub: `${conversionRate}% conversión` },
+            { label: 'Cerrados', value: stats.cerrados, icon: CheckCircle, color: 'text-brand-green', sub: `${conversionRate}% conv.` },
           ].map(({ label, value, icon: Icon, color, sub }) => (
-            <div key={label} className="card">
-              <div className="flex items-center justify-between mb-3">
+            <div key={label} className="card p-6">
+              <div className="flex items-center justify-between mb-4">
                 <span className="text-xs text-ink-muted font-medium">{label}</span>
-                <Icon size={16} className={color} />
+                <Icon size={15} className={color} />
               </div>
-              <div className="font-display font-bold text-3xl text-ink">{value}</div>
-              {sub && <div className="text-xs text-ink-faint mt-1">{sub}</div>}
+              <div className="font-display font-bold text-4xl text-ink leading-none">{value}</div>
+              {sub && <div className="text-xs text-ink-faint mt-2">{sub}</div>}
             </div>
           ))
         )}
@@ -157,9 +157,9 @@ export default function Dashboard() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <Link to="/app/discovery" className="card hover:border-accent/40 hover:-translate-y-0.5 transition-all cursor-pointer group">
+        <Link to="/app/discovery" className="card hover:border-accent/30 hover:shadow-card-hover transition-all duration-150 cursor-pointer group">
           <div className="flex items-center gap-4">
-            <div className="w-11 h-11 bg-accent-light rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-accent/20 transition-colors">
+            <div className="w-11 h-11 bg-accent-light rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-accent/20 transition-colors duration-150">
               <Search size={20} className="text-accent" />
             </div>
             <div>
@@ -168,9 +168,9 @@ export default function Dashboard() {
             </div>
           </div>
         </Link>
-        <Link to="/app/pipeline" className="card hover:border-accent/40 hover:-translate-y-0.5 transition-all cursor-pointer group">
+        <Link to="/app/pipeline" className="card hover:border-purple-200 hover:shadow-card-hover transition-all duration-150 cursor-pointer group">
           <div className="flex items-center gap-4">
-            <div className="w-11 h-11 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-purple-100 transition-colors">
+            <div className="w-11 h-11 bg-purple-50 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-purple-100 transition-colors duration-150">
               <Kanban size={20} className="text-purple-500" />
             </div>
             <div>
@@ -217,7 +217,7 @@ export default function Dashboard() {
                 <div key={stage} className="flex-1 flex flex-col items-center gap-1.5">
                   <span className="text-xs font-bold text-ink">{count}</span>
                   <div
-                    className="w-full rounded-t-md bg-accent/20 transition-all"
+                    className="w-full rounded-t-md bg-accent/35 transition-all"
                     style={{ height: `${barHeight}px` }}
                   />
                   <span className="text-xs text-ink-faint text-center leading-tight">{STAGE_LABELS[stage]}</span>

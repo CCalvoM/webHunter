@@ -63,7 +63,7 @@ function ProspectCard({
   return (
     <div
       onClick={onClick}
-      className="bg-white border border-black/8 rounded-lg p-3 shadow-sm hover:shadow-md hover:border-black/20 transition-all cursor-pointer"
+      className="bg-white border border-black/[0.07] rounded-lg p-3 shadow-card hover:shadow-card-hover hover:border-black/15 transition-all duration-150 cursor-pointer"
     >
       <div className="font-medium text-sm text-ink mb-1 leading-tight">{prospect.name}</div>
       <div className="text-xs text-ink-muted mb-2">{prospect.city} · {prospect.category}</div>
