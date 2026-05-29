@@ -27,22 +27,21 @@ export default function AppLayout() {
     navigate('/login')
   }
 
-
   return (
     <div className="flex h-screen bg-surface overflow-hidden">
 
-      {/* Sidebar */}
-      <aside className="hidden md:flex w-56 flex-shrink-0 bg-white border-r border-black/8 flex-col">
+      {/* Sidebar — dark */}
+      <aside className="hidden md:flex w-56 flex-shrink-0 bg-ink flex-col">
 
         {/* Logo */}
-        <div className="px-4 h-14 flex items-center gap-2.5 border-b border-black/8">
+        <div className="px-4 h-14 flex items-center gap-2.5 border-b border-white/[0.07]">
           <div className="w-7 h-7 bg-accent rounded-lg flex items-center justify-center flex-shrink-0">
             <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
               <circle cx="8" cy="8" r="5" stroke="white" strokeWidth="1.8"/>
               <line x1="12" y1="12" x2="16" y2="16" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
             </svg>
           </div>
-          <span className="font-display font-bold text-base text-ink">Cloza</span>
+          <span className="font-display font-bold text-base text-white">Cloza</span>
         </div>
 
         {/* Nav */}
@@ -53,10 +52,10 @@ export default function AppLayout() {
               to={to}
               end={end}
               className={({ isActive }) => clsx(
-                'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
                 isActive
-                  ? 'bg-accent-light text-accent'
-                  : 'text-ink-muted hover:bg-black/5 hover:text-ink',
+                  ? 'bg-white/[0.12] text-white'
+                  : 'text-white/50 hover:bg-white/[0.07] hover:text-white/85',
               )}
             >
               <Icon size={16} />
@@ -65,9 +64,8 @@ export default function AppLayout() {
           ))}
         </nav>
 
-
         {/* User */}
-        <div className="border-t border-black/8 p-3">
+        <div className="border-t border-white/[0.07] p-3">
           <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg">
             <div className="w-7 h-7 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-white text-xs font-bold">
@@ -75,13 +73,13 @@ export default function AppLayout() {
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium text-ink truncate">{user?.email}</div>
-              <div className="text-xs text-ink-faint capitalize">{credits?.plan ?? 'Free'}</div>
+              <div className="text-xs font-medium text-white/85 truncate">{user?.email}</div>
+              <div className="text-xs text-white/35 capitalize">{credits?.plan ?? 'Free'}</div>
             </div>
           </div>
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-ink-muted hover:bg-black/5 hover:text-ink transition-colors mt-1"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-white/45 hover:bg-white/[0.07] hover:text-white/80 transition-all duration-150 mt-1"
           >
             <LogOut size={14} />
             Cerrar sesión
@@ -101,7 +99,7 @@ export default function AppLayout() {
       <FeedbackButton />
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-black/8">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-white border-t border-black/[0.07]">
         <div className="flex">
           {NAV_ITEMS.map(({ to, mobileLabel, icon: Icon, end }) => (
             <NavLink
