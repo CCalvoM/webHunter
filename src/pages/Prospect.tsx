@@ -151,6 +151,7 @@ export default function ProspectPage() {
   const [savingEmail, setSavingEmail] = useState(false)
   const [generatingAudit, setGeneratingAudit] = useState(false)
   const [auditError, setAuditError] = useState('')
+  const [showCartaWarning, setShowCartaWarning] = useState(false)
   const [copied, setCopied] = useState(false)
   const [savingNotes, setSavingNotes] = useState(false)
   const [showFlagModal, setShowFlagModal] = useState(false)
@@ -206,12 +207,24 @@ export default function ProspectPage() {
     setPendingStage(null)
   }
 
-  const handleGenerateAudit = async () => {
+  const isFoodBusiness = (category: string) => {
+    const c = category.toLowerCase()
+    return ['restaurante', 'bar', 'cafetería', 'cafeteria', 'café', 'cafe',
+      'panadería', 'pizzería', 'hamburguesería', 'taberna', 'mesón', 'tasca', 'cervecería',
+    ].some(t => c.includes(t))
+  }
+
+  const handleGenerateAudit = async (force = false) => {
     if (!prospect) return
     if (!canAudit) {
       setAuditError(`Has alcanzado el límite de ${credits?.audits_limit} audits de hoy. Vuelve mañana.`)
       return
     }
+    if (!force && prospect.web_status === 'no_web' && isFoodBusiness(prospect.category)) {
+      setShowCartaWarning(true)
+      return
+    }
+    setShowCartaWarning(false)
     setGeneratingAudit(true)
     setAuditError('')
     try {
@@ -466,7 +479,7 @@ export default function ProspectPage() {
               </span>
             )}
             <button
-              onClick={handleGenerateAudit}
+              onClick={() => handleGenerateAudit()}
               disabled={generatingAudit || !canAudit}
               className="flex items-center gap-1.5 text-xs bg-accent text-white px-3 py-1.5 rounded-full hover:bg-accent-dark transition-colors disabled:opacity-50"
             >
@@ -478,6 +491,35 @@ export default function ProspectPage() {
             </button>
           </div>
         </div>
+
+        {showCartaWarning && (
+          <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+            <p className="text-xs font-medium text-amber-800 mb-1 flex items-center gap-1.5">
+              <AlertCircle size={12} /> Verifica la carta antes de generar
+            </p>
+            <p className="text-xs text-amber-700 mb-3">
+              Este tipo de negocio puede tener carta digital en Google Maps aunque no figure como web. Si tiene dominio propio en el campo "Carta", el pitch quedaría incorrecto.
+            </p>
+            <div className="flex gap-2 flex-wrap">
+              {prospect.google_maps_url && (
+                <a
+                  href={prospect.google_maps_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-amber-800 border border-amber-300 bg-white px-3 py-1.5 rounded-full hover:bg-amber-100 transition-colors"
+                >
+                  <ExternalLink size={11} /> Ver en Maps
+                </a>
+              )}
+              <button
+                onClick={() => handleGenerateAudit(true)}
+                className="flex items-center gap-1.5 text-xs bg-accent text-white px-3 py-1.5 rounded-full hover:bg-accent-dark transition-colors"
+              >
+                <Sparkles size={11} /> Generar de todas formas
+              </button>
+            </div>
+          </div>
+        )}
 
         {auditError && (
           <p className="text-xs text-red-500 mb-3 flex items-center gap-1">

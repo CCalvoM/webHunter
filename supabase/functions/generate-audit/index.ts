@@ -81,6 +81,19 @@ function scoringGuide(
   return `Tiene web real: score base entre 55-80 según calidad. Penalización por PageSpeed lento: ${perfPenalty} puntos. ${seoBonus}`
 }
 
+// Avisa al modelo cuando el negocio es de hostelería y no tiene web registrada:
+// la API de Google no devuelve la URL de carta digital, así que podría tenerla
+// sin que lo sepamos. El pitch no debe afirmar que no tienen presencia online.
+function cartaWarning(web_status: string, sector: string): string {
+  if (web_status !== 'no_web') return ''
+  const s = sector.toLowerCase()
+  const isFood = ['restaurante', 'bar', 'cafetería', 'cafeteria', 'café', 'cafe',
+    'panadería', 'pizzería', 'hamburguesería', 'taberna', 'mesón', 'tasca', 'cervecería',
+  ].some(t => s.includes(t))
+  if (!isFood) return ''
+  return '\nATENCIÓN — REGLA CRÍTICA: Este negocio puede tener carta digital en Google Maps (ej. carta.avocaty.io o su propio dominio) aunque la API no lo detecte. En el pitch NUNCA uses frases como "no tienes presencia online" o "no te encuentran en internet". Usa SIEMPRE "sin web propia" o "sin página propia". El pitch debe referirse a la ausencia de un sitio web completo con identidad propia, no a la ausencia de toda presencia digital.'
+}
+
 function sectorInsights(sector: string): string {
   const s = sector.toLowerCase()
   if (s.includes('restaurante') || s.includes('bar') || s.includes('cafetería'))
@@ -158,6 +171,7 @@ serve(async (req: Request) => {
   const pagespdInterp = interpretPagespeed(pagespeed_score, pagespeed_seo)
   const scoring = scoringGuide(web_status, pagespeed_score, pagespeed_seo)
   const sectorData = sectorInsights(sector)
+  const cartaNote = cartaWarning(web_status, sector)
 
   const prompt = `Eres un consultor senior de marketing digital especializado en negocios locales españoles. Tu misión es generar un informe de auditoría tan concreto, convincente y basado en datos que el dueño del negocio sienta que ignorarlo le cuesta dinero real cada día.
 
@@ -173,6 +187,7 @@ DATOS DEL NEGOCIO:
 
 DATO SECTORIAL (úsalo en el pitch):
 ${sectorData}
+${cartaNote}
 
 REGLA DE PUNTUACIÓN: ${scoring}
 
