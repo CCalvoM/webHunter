@@ -10,33 +10,12 @@ export function useCredits(userId: string | undefined) {
     if (!userId) return
     setLoading(true)
 
-    const { data } = await supabase
-      .from('credits')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
-
-    if (data) {
-      const today = new Date().toISOString().slice(0, 10)
-      const lastReset = (data.reset_date ?? '').slice(0, 10)
-
-      if (lastReset < today) {
-        const { data: updated } = await supabase
-          .from('credits')
-          .update({
-            searches_used: 0,
-            audits_used: 0,
-            reset_date: new Date().toISOString(),
-          })
-          .eq('user_id', userId)
-          .select()
-          .single()
-
-        setCredits(updated ?? data)
-      } else {
-        setCredits(data)
-      }
-    }
+    // RPC con SECURITY DEFINER: resetea el contador diario si reset_date es de
+    // un día anterior. No se expone UPDATE directo al cliente (ver migración
+    // 20260628_reset_credits_rpc.sql) para evitar que el usuario manipule sus
+    // propios créditos desde la consola del navegador.
+    const { data } = await supabase.rpc('reset_daily_credits_if_needed')
+    if (data) setCredits(data)
 
     setLoading(false)
   }, [userId])
